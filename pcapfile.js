@@ -1,6 +1,4 @@
 var fs = require('fs');
-var Logger = require('./logger');
-var Parser = require("binary-parser").Parser;
 var packetDefinitions = require('packet_definitions');
 var crypto = require('crypto');
 var maxPacketLength = 20000;
@@ -79,7 +77,7 @@ function Packet() {
 }
 
 
-function PcapFile(fileName, debugLevel) {
+function PcapFile(fileName, logger) {
       this._buffer = Buffer.alloc(maxPacketLength);
       this._fileName = fileName;
       this._fd = null;
@@ -89,9 +87,11 @@ function PcapFile(fileName, debugLevel) {
       this._fileSize;
       this._fileNotCompleted = true;
       this._packetCnt = 0;
-      this._logger = Logger(debugLevel);
+      this._logger = logger;
       this._ptrBufferCurrentPacket = 0;
       this._lenBufferCurrentPacket = 0;
+      this._csvWriter;
+      this._progressBar;
     }
 
 PcapFile.prototype.fileNotCompleted = function(self) {
@@ -124,7 +124,7 @@ PcapFile.prototype.initFile = function(){
             }
             fs.open(self._fileName, 'r', function(err, fd) {
                 if (err) {
-                    logger.error(err.message);
+                    self.logger.error(err.message);
                     reject(err);
                 }
                 self._fd = fd;

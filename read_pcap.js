@@ -1,10 +1,9 @@
-var fs = require('fs');
 
-const args = require('minimist')(process.argv.slice(2));
 var PcapFile = require('./pcapfile');
 var header_fields = require('./header_fields');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const cliProgress = require('cli-progress');
+const max_packet_buffer = 10000;
 
 // progress bar
 const multibar = new cliProgress.MultiBar({
@@ -12,18 +11,9 @@ const multibar = new cliProgress.MultiBar({
     hideCursor: true
  
 }, cliProgress.Presets.shades_grey);
-var b1;
 
-// read commandline flags
-const inputfile = (typeof args.i === 'undefined' || args.i === null) ? "./inputfile.pcap" : args.i;
-const csvfile = (typeof args.c === 'undefined' || args.c === null) ? "./output.csv" : args.c;
-const debuglevel = (typeof args.d === 'undefined' || args.d === null) ? "error" : args.d;
-const csvWriter = createCsvWriter({
-    path: csvfile,
-    header: header_fields
-});
-var logger = require('./logger')(debuglevel);
-var pcap1 = new PcapFile(inputfile);
+var logger;
+
 
 
 function flattenObject(ob) {
@@ -48,9 +38,9 @@ function flattenObject(ob) {
 
 function readPacket(pcapdata){
     if (pcapdata.fileNotCompleted()) {
-        return pcap1.readPacketHeader(pcapdata)
+        return pcapdata.readPacketHeader(pcapdata)
             .then(function(result){
-                return pcap1.readEthernetHeader(result);
+                return result.readEthernetHeader(result);
             })
             .then(function(result){
 
@@ -63,7 +53,7 @@ function readPacket(pcapdata){
                     case 0x86dd:
                         return readIPv6Packet(result);
                     default:
-                        logger.info("Unknown ethernet protocol at packet " + 
+                        result._logger.info("Unknown ethernet protocol at packet " + 
                                     result._packetCnt + 
                                     " with ethernet type/length 0x" + 
                                     result._currentPacket.ethernetHeader.ethernet_type.toString(16)
@@ -76,15 +66,15 @@ function readPacket(pcapdata){
         }
 }
 function readIPv6Packet(pcapdata){
-    return pcap1.readPacketIPv6Header(pcapdata).then( function(result){
+    return pcapdata.readPacketIPv6Header(pcapdata).then( function(result){
         switch(result._currentPacket.ipV6Header.nextHeader) {
             case 17: // udp packet
-                return readUDPPacket(pcapdata);
+                return readUDPPacket(result);
             case 6: // tcp packet
-                return readTCPPacket(pcapdata);
+                return readTCPPacket(result);
             case 1: // icmp
                 result._currentPacket.protocol = "icmp";
-                return readGenericIPPacket(pcapdata);
+                return readGenericIPPacket(result);
             case 0: // IPv6 Hop-by-Hop Option
                 return readNexIPv6Header(result);
             case 43: // Routing Header for IPv6
@@ -108,7 +98,7 @@ function readIPv6Packet(pcapdata){
             case 254: // Use for experimentation and testing
                 return readNexIPv6Header(result);
             default:
-                logger.info("Unknown IP protocol at IPv6 packet " + 
+                result._logger.info("Unknown IP protocol at IPv6 packet " + 
                             result._packetCnt + 
                             " with type " + 
                             result._currentPacket.ethernetHeader.ethernet_type.toString(10)
@@ -118,7 +108,7 @@ function readIPv6Packet(pcapdata){
     });
 }
 function readNexIPv6Header(pcapdata) {
-    return pcap1.readNexIPv6Header(pcapdata).then(function(result) {
+    return pcapdata.readNexIPv6Header(pcapdata).then(function(result) {
 
         switch(result._currentPacket.ipV6OptionHeader[result._currentPacket.ipV6Header.optionHeaderCnt-1].nextHeader) {
             case 17: // udp packet
@@ -151,7 +141,7 @@ function readNexIPv6Header(pcapdata) {
             case 254: // Use for experimentation and testing
                 return readNexIPv6Header(result);
             default:
-                logger.info("Unknown IP protocol at IPv6 packet " + 
+                result._logger.info("Unknown IP protocol at IPv6 packet " + 
                             result._packetCnt + 
                             " with type " + 
                             result._currentPacket.ethernetHeader.ethernet_type.toString(10)
@@ -161,7 +151,7 @@ function readNexIPv6Header(pcapdata) {
     });
 }
 function readIPPacket(pcapdata){
-    return pcap1.readPacketIPHeader(pcapdata)
+    return pcapdata.readPacketIPHeader(pcapdata)
         .then(function(result){
 
             switch(result._currentPacket.ipHeader.protocol) {
@@ -173,7 +163,7 @@ function readIPPacket(pcapdata){
                     result._currentPacket.protocol = "icmp";
                     return readGenericIPPacket(result);
                 default:
-                    logger.info("Unknown IP protocol at IP packet " + 
+                    result._logger.info("Unknown IP protocol at IP packet " + 
                                 result._packetCnt + 
                                 " with type " + 
                                 result._currentPacket.ethernetHeader.ethernet_type.toString(10)
@@ -183,91 +173,99 @@ function readIPPacket(pcapdata){
         });
 }
 function readGenericEthernetPacket(pcapdata){
-    return pcap1.readgenericEthernetPacket(pcapdata);
+    return pcapdata.readgenericEthernetPacket(pcapdata);
 }
 function readGenericIPPacket(pcapdata){
-    return pcap1.readgenericIPPacket(pcapdata);
+    return pcapdata.readgenericIPPacket(pcapdata);
 }
 function readGenericIPv6Packet(pcapdata){
     return pcapdata.readgenericIPv6Packet(pcapdata);
 }
 function readUDPPacket(pcapdata) {
-    return pcap1.readPacketUDPHeader(pcapdata)
+    return pcapdata.readPacketUDPHeader(pcapdata)
             .then(function(result){
-                return pcap1.readDataPacket(result);
+                return result.readDataPacket(result);
             });
 
 }
 
 function readTCPPacket(pcapdata) {
-    return pcap1.readPacketTCPHeader(pcapdata)
+    return pcapdata.readPacketTCPHeader(pcapdata)
             .then(function(result){
-                return pcap1.readDataPacket(result);
+                return result.readDataPacket(result);
             });
 
 }
 
 function readARPPacket(pcapdata) {
-    return pcap1.readArpPacket(pcapdata);
+    return pcapdata.readArpPacket(pcapdata);
 }
 
 function itteratePackets(pcapdata) {
     return readPacket(pcapdata).then(function(result){
         if (result.fileNotCompleted(result)) {
-            logger.debug("packets read: " + 
+            result._logger.debug("packets read: " + 
                           result._packetCnt + 
                           JSON.stringify(flattenObject(result._currentPacket))
                          );
             result._packets.push(flattenObject(result._currentPacket));
             // write every 1000 packets to file
-            if (result._packets.length == 1000) {
-                b1.update(Math.floor(result._bytes_read/1048576));
-                // logger.info("packets read " + 
-                //              result._packetCnt +
-                //              " complete: " +
-                //              Math.floor(result._bytes_read / result._fileSize * 100) +
-                //              "%"
-                //             );
-                return csvWriter.writeRecords(result._packets)
+            if (result._packets.length % 10000 || result._packets.length == max_packet_buffer) {
+                result._progressBar.update(Math.floor(result._bytes_read/1048576));
+            }
+            // write every 1000 packets to file
+            if (result._packets.length == max_packet_buffer) {
+                
+                return result._csvWriter.writeRecords(result._packets)
                             .then(() => {
                                 return new Promise(function(resolve, reject) {
                                     // reset array
-                                    pcapdata._packets.length = 0;
-                                    resolve(pcapdata);
+                                    result._packets.length = 0;
+                                    resolve(result);
                                 });
                             })
-                            .then(() => {return itteratePackets(pcapdata)});
+                            .then(() => {return itteratePackets(result)});
             }
-            return itteratePackets(pcapdata);
+            return itteratePackets(result);
         } else {
             // console.log("last packet read " + result._packetCnt,flattenObject(result._currentPacket));
-            logger.info("last packet read");
+            result._logger.info("last packet read");
             result._packets.push(flattenObject(result._currentPacket));
             return result;
         }
     });
 }
 
-// main program
-pcap1.initFile()
-.then(function(result){
-    b1 = multibar.create(Math.floor(result._fileSize/1048576), 0);
-    b1.update(0, {filename: result._fileName});
-    return pcap1.readHeader(result);
-})
-.then(function(result){
-    return itteratePackets(result);
-})
-.then(function(result){
-    return csvWriter.writeRecords(result._packets)       // returns a promise
+function read_pcap(inputfile, csvfile, logger) {
+    var pcap1 = new PcapFile(inputfile, logger);
 
-})
-.then(() => {
-    // stop all bars
-    multibar.stop();
-    logger.info('...Done');
-})
-.catch(function(result){
-    return logger.error("err at packet: " + pcap1._packetCnt + " with message: " + result);
-});
- 
+    pcap1._csvWriter = createCsvWriter({
+        path: csvfile,
+        header: header_fields
+    });
+
+    pcap1.initFile()
+    .then(function(result){
+        result._progressBar = multibar.create(Math.floor(result._fileSize/1048576), 0);
+        result._progressBar.update(0, {filename: result._fileName});
+        return result.readHeader(result);
+    })
+    .then(function(result){
+        return itteratePackets(result);
+    })
+    .then(function(result){
+        return csvWriter.writeRecords(result._packets)       // returns a promise
+
+    })
+    .then(() => {
+        // stop all bars
+        multibar.stop();
+        result._logger.info('...Done');
+        console.log("packets read: " + pcap1._packetCnt);
+    })
+    .catch(function(result){
+        return logger.error("err at packet: " + result._packetCnt + " with message: " + result);
+    });
+}
+
+module.exports = read_pcap;
