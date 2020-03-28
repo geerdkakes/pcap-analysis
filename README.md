@@ -4,11 +4,11 @@ Pcap-analysis contains a set of functions to analyse pcap files. Currently the m
 to compare two pcap files and match the packets. This way the packet loss and packet delay can be
 determined. The function creates several csv-files to which all information is stored.
 
- ----------                          -----------
-|          |                        |           |
-|  source  | ---------------------> |destination|
-|   pcap   |                        |   pcap    |
- ----------                          -----------
+     ----------                          -----------
+    |          |                        |           |
+    |  source  | ---------------------> |destination|
+    |   pcap   |                        |   pcap    |
+     ----------                          -----------
 
 ## usage
 
@@ -33,7 +33,7 @@ Please fork this code and create a pull request to contribute.
 
 ## License
 
-This code may be freely used under the MIT license
+This code may be freely used under the MIT license. Please see `LICENSE.md`.
 
 ## Author
 
