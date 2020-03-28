@@ -1,85 +1,72 @@
+// pcapfile.js
+//
+// defines the pcapfile object and all functions needed to read the file.
+// this file is called from 'read_pcap.js'
+
+// main libraries used
 var fs = require('fs');
-var packetDefinitions = require('packet_definitions');
 var crypto = require('crypto');
+
+// Packet_definitions contains all header fields currrently recognised by 'pcapfile'
+var packetDefinitions = require('./packet_definitions');
+
+
+// Buffer to read a new packet to memmory is currently set to 20k Bytes
 var maxPacketLength = 20000;
 
-function checksum(str, algorithm, encoding) {
+// checksum function, used to create a checksum of the payload
+function checksum(buf, algorithm, encoding) {
   return crypto
     .createHash(algorithm || 'md5')
-    .update(str, 'utf8')
+    .update(buf)
     .digest(encoding || 'hex')
 }
 
+// helper function flattenObject, used to flatten the packet-object before storing in a csv-file
+function flattenObject(ob) {
+    var toReturn = {};
+
+    for (var i in ob) {
+        if (!ob.hasOwnProperty(i)) continue;
+
+        if ((typeof ob[i]) == 'object' && ob[i] !== null) {
+            var flatObject = flattenObject(ob[i]);
+            for (var x in flatObject) {
+                if (!flatObject.hasOwnProperty(x)) continue;
+
+                toReturn[i + '.' + x] = flatObject[x];
+            }
+        } else {
+            toReturn[i] = ob[i];
+        }
+    }
+    return toReturn;
+}
+
+// this function defines the packet object
+// for each new packet this object is used to
+// create a new packet. Used by 'readPacketHeader'
 function Packet() {
     this.protocol="";
-    this.pcapPacketHeader= {
-        ts_sec: 0,
-        ts_usec: 0,
-        incl_len: 0,
-        orig_len: 0
-    };
-    this.ethernetHeader= {
-        dest_mac: [0, 0, 0, 0, 0, 0],
-        src_mac: [0, 0, 0, 0, 0, 0],
-        ethernet_type: 0
-    };
-    this.ipHeader= {
-        version: 0,
-        headerLength: 0,
-        tos: 0,
-        packetLength: 0,
-        id: 0,
-        flags: 0,
-        fragOffset: 0,
-        ttl: 0,
-        protocol: 0,
-        checksum: 0,
-        src: [0, 0, 0, 0],
-        dst: []
-    };
-    this.udpHeader= {
-        src_port: 0,
-        dest_port: 0,
-        length: 0,
-        chksum: 0
-    };
-    this.tcpHeader= {
-        src_port: 0,
-        dest_port: 0,
-        sequence_nr: 0,
-        ack_nr: 0,
-        header_offset: 0,
-        reserved: 0,
-        control_flags: 0,
-        length: 0,
-        chksum: 0,
-        urgent_ptr: 0,
-        optional: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    };
-    this.arpPacket = {
-        hw_type: 0,
-        prot_type:0,
-        hplen: 0,
-        plen: 0,
-        operation: 0,
-        src_mac: [0, 0, 0, 0, 0, 0],
-        src_ip: [0, 0, 0, 0],
-        dst_mac: [0, 0, 0, 0, 0, 0],
-        dst_ip: [0, 0, 0, 0]
-    };
-    this.genericIPPacket = {
-        checksum: 0
-    };
-    this.genericEthernetPacket = {
-        checksum:0 
-    };
+    this.packetNr;
+    this.pcapPacketHeader= {};
+    this.ethernetHeader= {};
+    this.ipHeader= {};
+    this.udpHeader= {};
+    this.tcpHeader= {};
+    this.arpPacket = {};
+    this.genericIPPacket = {};
+    this.genericEthernetPacket = {};
     this.dataChksum= '';
 }
 
-
-function PcapFile(fileName, logger) {
+// main object PcapFile
+// used to create a new pcapfile object
+// called from function 'read_pcap.js'
+function PcapFile(fileName, logger, filter) {
       this._buffer = Buffer.alloc(maxPacketLength);
       this._fileName = fileName;
+      this._filter = filter;
       this._fd = null;
       this._bytes_read=0;
       this._currentPacket = {};
@@ -92,8 +79,10 @@ function PcapFile(fileName, logger) {
       this._lenBufferCurrentPacket = 0;
       this._csvWriter;
       this._progressBar;
+      this._packetsWritenToCSV = 0;
     }
 
+// helper function to determine if we reached end of file
 PcapFile.prototype.fileNotCompleted = function(self) {
     if (!self) {
         self = this;
@@ -101,6 +90,7 @@ PcapFile.prototype.fileNotCompleted = function(self) {
     return self._fileNotCompleted;
 }    
 
+// helper function to keep track of the number of bytes read
 PcapFile.prototype.updateBytesRead = function(self,dataRead) {
     self._bytes_read += dataRead;
     if (self._fileSize <= self._bytes_read ) {
@@ -108,6 +98,9 @@ PcapFile.prototype.updateBytesRead = function(self,dataRead) {
         self._logger.info("end of file reached");
     }
 }
+
+// helper function to create a sub-buffer from the same address range to
+// which a packet has been stored.
 PcapFile.prototype.readBuf = function(dataToRead) {
     var self = this;
     var start = self._ptrBufferCurrentPacket;
@@ -115,6 +108,8 @@ PcapFile.prototype.readBuf = function(dataToRead) {
     self._ptrBufferCurrentPacket += dataToRead;
     return self._buffer.slice(start, end);
 }
+
+// initialise, open file and determine file size
 PcapFile.prototype.initFile = function(){
         var self = this;
         return new Promise(function(resolve, reject) {
@@ -138,9 +133,26 @@ PcapFile.prototype.initFile = function(){
         });
     }
 
+    // store found packet in memory. Filter function is called that has been parsed when creating
+    // object to determine if we want to keep this packet.
+    PcapFile.prototype.storePacket = function(self) {
+        if (!self) {
+            self = this;
+        }
+        return new Promise(function(resolve, reject){
+            let currentPacket = flattenObject(self._currentPacket);
+            if (self._filter(currentPacket)) {
+                self._packets.push(currentPacket);
+            }
+            resolve(self);
+        }); 
+    }
 
+    // Read pcap header (main header)
     PcapFile.prototype.readHeader = function(self) {
-
+        if (!self) {
+            self = this;
+        }
         return new Promise(function(resolve, reject) {
             fs.read(self._fd, self._buffer, 0, 24, null, function(err, num) {
                 if (err) {
@@ -150,6 +162,7 @@ PcapFile.prototype.initFile = function(){
                 self._logger.info("read",num,"bytes");
                 self.updateBytesRead(self,num);
 
+                // determine big indian or litle indian by reading magic string
                 if ( self._buffer.toString('hex', 0, 4) === 'd4c3b2a1' ) {
                     self._endian = 'litle';
                     Buffer.prototype.readUInt = Buffer.prototype.readUIntLE;
@@ -175,6 +188,9 @@ PcapFile.prototype.initFile = function(){
         });
     }
 
+    // read packet header, containing time stamp and packet length
+    // after packet length has been determined, the remaining packet
+    // is also read
     PcapFile.prototype.readPacketHeader = function (self){
         if (!self) {
             self = this;
@@ -197,7 +213,7 @@ PcapFile.prototype.initFile = function(){
                 self._currentPacket._ptrCurrentPacket=0;
                 var remaining_data_to_read = self._currentPacket.pcapPacketHeader.incl_len;
                 self._packetCnt++;
-
+                self._currentPacket.packetNr = self._packetCnt;
                 if (remaining_data_to_read > maxPacketLength) {
                     self._logger.error("More than " + maxPacketLength + 
                                          " bytes to read, please check file structure at packet " +
@@ -400,7 +416,6 @@ PcapFile.prototype.initFile = function(){
         return new Promise(function(resolve, reject) {
 
             var length = self._currentPacket.dataSize;
-
 
             if (length > 0 ) {
 

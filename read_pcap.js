@@ -1,41 +1,31 @@
+// read_pcap.js
+// main function is read_pcap which returns a promise.
+// read_pcap walks through the whole pcapfile and reads each packet
+// using the pcapfile object.
+// this function will also store the results to a csv file
+// all main data is stored in the pcapfile object defined in 'pcapfile.js'
+// read_pcap is called from 'index.js'
 
+// get main pcapfile object
 var PcapFile = require('./pcapfile');
+
+// get header fields defining which fields are stored in a csv file
 var header_fields = require('./header_fields');
+
+// get createCsvWriter used to store data in a csv file
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const cliProgress = require('cli-progress');
-const max_packet_buffer = 10000;
 
-// progress bar
-const multibar = new cliProgress.MultiBar({
-    clearOnComplete: false,
-    hideCursor: true
- 
-}, cliProgress.Presets.shades_grey);
+// Determine if we want to keep all data in memory. Needed when we want to
+// compare the results. 
+var keep_buffer = false;
 
-var logger;
+// determine how manu packets are cached before writing to file
+const write_to_csv = 1000;
 
 
-
-function flattenObject(ob) {
-    var toReturn = {};
-
-    for (var i in ob) {
-        if (!ob.hasOwnProperty(i)) continue;
-
-        if ((typeof ob[i]) == 'object' && ob[i] !== null) {
-            var flatObject = flattenObject(ob[i]);
-            for (var x in flatObject) {
-                if (!flatObject.hasOwnProperty(x)) continue;
-
-                toReturn[i + '.' + x] = flatObject[x];
-            }
-        } else {
-            toReturn[i] = ob[i];
-        }
-    }
-    return toReturn;
-}
-
+// function to read packet header and ethernet header
+// based on ethernet type an other read_header_function is called
+// this function returns a promise
 function readPacket(pcapdata){
     if (pcapdata.fileNotCompleted()) {
         return pcapdata.readPacketHeader(pcapdata)
@@ -188,7 +178,6 @@ function readUDPPacket(pcapdata) {
             });
 
 }
-
 function readTCPPacket(pcapdata) {
     return pcapdata.readPacketTCPHeader(pcapdata)
             .then(function(result){
@@ -196,75 +185,105 @@ function readTCPPacket(pcapdata) {
             });
 
 }
-
 function readARPPacket(pcapdata) {
     return pcapdata.readArpPacket(pcapdata);
 }
 
+// function to itterate of all packets in the file
+// from this function the readPacket is called which 
+// will call the other read header functions
+// this function will return a promise
 function itteratePackets(pcapdata) {
-    return readPacket(pcapdata).then(function(result){
+    return readPacket(pcapdata)
+            .then(function(result){
+                return result.storePacket();
+            })
+            .then(function(result){
         if (result.fileNotCompleted(result)) {
-            result._logger.debug("packets read: " + 
-                          result._packetCnt + 
-                          JSON.stringify(flattenObject(result._currentPacket))
-                         );
-            result._packets.push(flattenObject(result._currentPacket));
             // write every 1000 packets to file
-            if (result._packets.length % 10000 || result._packets.length == max_packet_buffer) {
+            if (result._packets.length % 5000 && result._progressBar) {
                 result._progressBar.update(Math.floor(result._bytes_read/1048576));
             }
             // write every 1000 packets to file
-            if (result._packets.length == max_packet_buffer) {
-                
-                return result._csvWriter.writeRecords(result._packets)
+            if ( result._packets.length % write_to_csv == 0) {
+                return result._csvWriter.writeRecords(result._packets.slice((keep_buffer)?result._packetsWritenToCSV:0))
                             .then(() => {
                                 return new Promise(function(resolve, reject) {
-                                    // reset array
-                                    result._packets.length = 0;
+                                    result._packetsWritenToCSV += write_to_csv;
+                                    // check if we need to keep the buffer and reset if not
+                                    if (!keep_buffer) {
+                                        result._packets.length = 0;
+                                    }
                                     resolve(result);
                                 });
                             })
                             .then(() => {return itteratePackets(result)});
-            }
-            return itteratePackets(result);
+            } else return itteratePackets(result);
         } else {
-            // console.log("last packet read " + result._packetCnt,flattenObject(result._currentPacket));
             result._logger.info("last packet read");
-            result._packets.push(flattenObject(result._currentPacket));
             return result;
         }
     });
 }
 
-function read_pcap(inputfile, csvfile, logger) {
-    var pcap1 = new PcapFile(inputfile, logger);
+// main function 'read_pcap' used to read a pcapfile
+//
+// this function takes:
+//   inputfile:      string with pcap filename
+//
+//   csvfile:        string with export csv filename
+//
+//   logger:         logger object to log information. logger.debug, logger.info
+//                   and logger.error are called
+//
+//   filter:         to determine which packets to keep. filter(packet) is called. 
+//                   when true is returned the packet is stored
+//
+//   keep_in_memory: determine if all data should be kept in memory (used to compare after reading)
+//
+//   multibar:       parse a multibar object if a progressbar should be shown in a terminal
+//
+// this function is called from 'index.js' to read different pcapfiles and than to compare the result.
+// this function returns a promise
+function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar) {
+    return new Promise(function(resolve_readpcap, reject_readpcap) {
+        (function(inputfile, csvfile, logger, filter, keep_in_memory){
+            var pcap1 = new PcapFile(inputfile, logger, filter);
 
-    pcap1._csvWriter = createCsvWriter({
-        path: csvfile,
-        header: header_fields
-    });
+            if (keep_in_memory) {
+                keep_buffer = true;
+            }
 
-    pcap1.initFile()
-    .then(function(result){
-        result._progressBar = multibar.create(Math.floor(result._fileSize/1048576), 0);
-        result._progressBar.update(0, {filename: result._fileName});
-        return result.readHeader(result);
-    })
-    .then(function(result){
-        return itteratePackets(result);
-    })
-    .then(function(result){
-        return csvWriter.writeRecords(result._packets)       // returns a promise
-
-    })
-    .then(() => {
-        // stop all bars
-        multibar.stop();
-        result._logger.info('...Done');
-        console.log("packets read: " + pcap1._packetCnt);
-    })
-    .catch(function(result){
-        return logger.error("err at packet: " + result._packetCnt + " with message: " + result);
+            pcap1._csvWriter = createCsvWriter({
+                path: csvfile,
+                header: header_fields
+            });
+            pcap1.initFile()
+            .then(function(result){
+                if (multibar) {
+                    result._progressBar = multibar.create(Math.floor(result._fileSize/1048576), 0);
+                    if (result._progressBar) {
+                        result._progressBar.update(0, {filename: result._fileName});
+                    }
+                }
+                return result.readHeader(result);
+            })
+            .then(function(result){
+                return itteratePackets(result);
+            })
+            .then(function(result){
+                return result._csvWriter.writeRecords(result._packets)       // returns a promise
+            })
+            .then(() => {
+                pcap1._packetsWritenToCSV += pcap1._packets.length % write_to_csv
+                logger.info('...Done');
+                resolve_readpcap(pcap1);
+            })
+            .catch(function(result){
+                reject_readpcap(result);
+                return logger.error("err at packet: " + result._packetCnt + " with message: " + result);
+            });
+        })(inputfile, csvfile, logger, filter, keep_in_memory)
     });
 }
 

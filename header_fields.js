@@ -1,4 +1,5 @@
 header_fields = [
+    {"id": "packetNr", "title": "packetnr"},
     {"id": "protocol", "title": "protocol"},
     {"id": "pcapPacketHeader.ts_sec", "title": "ph_ts_sec"},
     {"id": "pcapPacketHeader.ts_usec", "title": "ph_ts_usec"},
@@ -31,6 +32,10 @@ header_fields = [
     {"id": "ipHeader.src.1", "title": "ih_src.1"},
     {"id": "ipHeader.src.2", "title": "ih_src.2"},
     {"id": "ipHeader.src.3", "title": "ih_src.3"},
+    {"id": "ipHeader.dst.0", "title": "ih_dst.0"},
+    {"id": "ipHeader.dst.1", "title": "ih_dst.1"},
+    {"id": "ipHeader.dst.2", "title": "ih_dst.2"},
+    {"id": "ipHeader.dst.3", "title": "ih_dst.3"},    
     {"id": "udpHeader.src_port", "title": "uh_src_port"},
     {"id": "udpHeader.dest_port", "title": "uh_dest_port"},
     {"id": "udpHeader.length", "title": "uh_length"},
