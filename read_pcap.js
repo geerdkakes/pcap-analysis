@@ -199,6 +199,9 @@ function itteratePackets(pcapdata) {
                 return result.storePacket();
             })
             .then(function(result){
+                return track_frames(result);
+            })
+            .then(function(result){
         if (result.fileNotCompleted(result)) {
             // write every 1000 packets to file
             if (result._packets.length % 5000 && result._progressBar) {
@@ -225,7 +228,125 @@ function itteratePackets(pcapdata) {
         }
     });
 }
-
+// function track_frames
+//
+// this function tracks which packets belong to the same information frame, e.g. video frame.
+function track_frames(pcdata) {
+    return new Promise(function(resolve, reject){
+        packet = pcdata._packets[pcdata._packets.length - 1];
+        if (!packet) {
+            // not defined yet exit gracefully. Might be that we are still at the beginning
+            return resolve(pcdata);
+        }
+        if (packet.frameCnt !== undefined) {
+            // already analysed
+            return resolve(pcdata);
+        }
+        track_data = get_track_data(packet);
+        if (!track_data) {
+            // nothing found, exit
+            return resolve(pcdata);
+        }
+        for (let ell of pcdata._frameTracker) {
+            if (match_object(ell,track_data)) {
+                // same track found
+                let timeDifference = time_diff(ell['pcapPacketHeader.ts_sec'], ell['pcapPacketHeader.ts_usec'],
+                                               packet['pcapPacketHeader.ts_sec'],packet['pcapPacketHeader.ts_usec']);
+                // if larger than 1msec (1000usec) than we have a new frame
+                if (timeDifference > 1000) {
+                    // new frame found, increase frame counter
+                    ell.frameCnt++;
+                    ell['pcapPacketHeader.ts_sec'] = packet['pcapPacketHeader.ts_sec'];
+                    ell['pcapPacketHeader.ts_usec'] = packet['pcapPacketHeader.ts_usec'];
+                    packet.frameCnt = ell.frameCnt;
+                    return resolve(pcdata);
+                } else {
+                    // same frame, store latest time
+                    ell['pcapPacketHeader.ts_sec'] = packet['pcapPacketHeader.ts_sec'];
+                    ell['pcapPacketHeader.ts_usec'] = packet['pcapPacketHeader.ts_usec'];
+                    packet.frameCnt = ell.frameCnt;
+                    return resolve(pcdata);
+                }
+            }
+        }
+        // no match found. Store track with zero counter
+        track_data['pcapPacketHeader.ts_sec'] = packet['pcapPacketHeader.ts_sec'];
+        track_data['pcapPacketHeader.ts_usec'] = packet['pcapPacketHeader.ts_usec'];
+        track_data.frameCnt = 0;
+        pcdata._frameTracker.push(track_data);
+        packet.frameCnt = 0;
+        return resolve(pcdata);
+    });
+}
+// function get_ports
+// 
+// helper function to get object with source and destination port
+// for udp and tcp
+function get_track_data(packet) {
+    if (!packet) {
+        // no packet data return
+        return;
+    } 
+    switch (packet.protocol) {
+        case 'udp':
+            return {
+                protocol: 'udp', 
+                srcPort: packet['udpHeader.src_port'], 
+                dstPort: packet['udpHeader.dest_port'],
+                dstIP0: packet['ipHeader.dst.0'],
+                dstIP1: packet['ipHeader.dst.2'],
+                dstIP2: packet['ipHeader.dst.3'],
+                dstIP3: packet['ipHeader.dst.4'],
+                srcIP0: packet['ipHeader.src.0'],
+                srcIP1: packet['ipHeader.src.2'],
+                srcIP2: packet['ipHeader.src.3'],
+                srcIP3: packet['ipHeader.src.4']
+            };
+        case 'tcp':
+            return {
+                protocol: 'tcp', 
+                srcPort: packet['tcpHeader.src_port'], 
+                dstPort: packet['tcpHeader.dest_port'],
+                dstIP0: packet['ipHeader.dst.0'],
+                dstIP1: packet['ipHeader.dst.2'],
+                dstIP2: packet['ipHeader.dst.3'],
+                dstIP3: packet['ipHeader.dst.4'],
+                srcIP0: packet['ipHeader.src.0'],
+                srcIP1: packet['ipHeader.src.2'],
+                srcIP2: packet['ipHeader.src.3'],
+                srcIP3: packet['ipHeader.src.4']
+            };
+    }
+    // if we reach this point the protocol was neither udp or tcp
+    return;
+}
+// function match_object
+//
+// helper function to match object data
+// object must be one level deep
+// there may be more fields in search_object than your search_fields contains
+function match_object(search_object, search_fields) {
+    for (let ell in search_fields) {
+        if (search_object[ell]) {
+            // element exists in search_object
+            if (search_object[ell] === search_fields[ell]) {
+                continue;
+            } else {
+                // elements not the same, stop search
+                return false;
+            }
+        }
+    }
+    return true;
+}
+// function time_diff
+//
+// helper function to get time difference based on four fields:
+//  - time1 with seconds and microseconds
+//  - time2 with seconds and microseconds
+function time_diff(t1_sec, t1_msec, t2_sec, t2_msec) {
+    return (t2_sec - t1_sec)*1000000 + (t2_msec - t1_msec);
+}
 // main function 'read_pcap' used to read a pcapfile
 //
 // this function takes:

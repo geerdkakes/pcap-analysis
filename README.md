@@ -21,6 +21,14 @@ After changing the 'config.js' run the program using:
 node  --max-old-space-size=8192   index.js
 ```
 
+## consolidate frames
+
+Using the output from the earlier run you can also create a csv file with all frames consolidated. During the first search frames are assumed for all source frames with matching source and destination addresses + ports and of which the packets are less than 1msec apart. To view the results per frame, consolidate these frames using:
+
+```
+node --max-old-space-size=8192 consolidate_frames.js -i analysed_input.csv -o consolidated_output.csv
+```
+
 ## other uses
 
 You can also use `read_pcap.js` to convert a pcap file to a csv format. For now you need to write your own code to do this.

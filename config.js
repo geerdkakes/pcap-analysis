@@ -41,6 +41,7 @@ config.match_array = [
 config.header_fields = [
     {"id": "source_packetNr", "title": "source_packetNr"}, 
     {"id": "destination_packetNr", "title": "destination_packetNr"},
+    {"id": "frameCnt", "title": "frameCnt"},
     {"id": "source_pcapPacketHeader.ts_sec", "title": "source_pcapPacketHeader.ts_sec"},
     {"id": "source_pcapPacketHeader.ts_usec", "title": "source_pcapPacketHeader.ts_usec"},
     {"id": "destination_pcapPacketHeader.ts_sec", "title": "destination_pcapPacketHeader.ts_sec"},

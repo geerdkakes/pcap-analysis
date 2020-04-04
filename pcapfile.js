@@ -80,6 +80,7 @@ function PcapFile(fileName, logger, filter) {
       this._csvWriter;
       this._progressBar;
       this._packetsWritenToCSV = 0;
+      this._frameTracker = [];
     }
 
 // helper function to determine if we reached end of file

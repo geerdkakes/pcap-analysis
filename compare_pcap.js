@@ -159,6 +159,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                     self._resultArray.push({
                         "source_packetNr": sourcePacket["packetNr"],
                         "destination_packetNr": destinationPacket["packetNr"],
+                        "frameCnt": sourcePacket["frameCnt"],
                         "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
                         "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
                         "destination_pcapPacketHeader.ts_sec": destinationPacket["pcapPacketHeader.ts_sec"],
@@ -185,6 +186,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                     nrOfLosts++;
                     self._resultArray.push({
                         "source_packetNr": sourcePacket["packetNr"],
+                        "frameCnt": sourcePacket["frameCnt"],
                         "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
                         "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
                         "pcapPacketHeader.incl_len": sourcePacket["pcapPacketHeader.incl_len"],
