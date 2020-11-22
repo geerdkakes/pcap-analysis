@@ -78,10 +78,12 @@ function filter_packet(filterSet) {
 read_pcap(config.sourcePcapName, config.sourceCsvName, logger, filter_packet(config.sourceFilterset), true, multibar)
 .then(function(result){
     sourceArray = result._packets;
+    logger.debug("Source list contains " + sourceArray.length + " entries");
     return read_pcap(config.destinationPcapName, config.destinationCsvName, logger, filter_packet(config.destFilterSet), true, multibar)
 })
 .then(function(result){
     destinationArray = result._packets;
+    logger.debug("Destination list contains " + destinationArray.length + " entries");
     return comparePcap.comparePcapArrays(sourceArray, destinationArray);
 })
 .then(function(result){

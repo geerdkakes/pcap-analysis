@@ -174,7 +174,7 @@ function readGenericIPv6Packet(pcapdata){
 function readUDPPacket(pcapdata) {
     return pcapdata.readPacketUDPHeader(pcapdata)
             .then(function(result){
-                if (result._currentPacket.udpHeader.src_port == "2152" && result._currentPacket.udpHeader.dst_port == "2152") {
+                if (result._currentPacket.udpHeader.src_port == "2152" && result._currentPacket.udpHeader.dest_port == "2152") {
                     // port 2152 indicates gprs tunnel. first interpret this tunnel header
                     return readGprsTunnelHeader(result);
                 } else {
@@ -196,7 +196,7 @@ function readARPPacket(pcapdata) {
 function readGprsTunnelHeader(pcapdata) {
     return pcapdata.readGprsTunnelHeader(pcapdata)
              .then(function(result){
-                 return result.readIPPacket(result);
+                 return readIPPacket(result);
              });
 }
 

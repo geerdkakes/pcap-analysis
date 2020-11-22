@@ -12,8 +12,8 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs')
 
 // read command line flags
-const filename_in = (typeof args.i === "undefined" || args.i === null) ? "analysed_input.csv" : args.i;
-const filename_out = (typeof args.o === "undefined" || args.o === null) ? "consolidated_output.csv" : args.o;
+const filename_in = (typeof args.i === "undefined" || args.i === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3.csv" : args.i;
+const filename_out = (typeof args.o === "undefined" || args.o === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3_consolidated.csv" : args.o;
 
 // array to which input csv is parsed
 const read_array = [];

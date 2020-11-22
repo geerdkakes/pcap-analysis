@@ -22,7 +22,7 @@ var packetDefinitions = {
             .endianess("big")
             .bit3("pcp")
             .bit1("dei")
-            .uint12("vid")
+            .bit12("vid")
             .uint16("ethernet_type"),
     ipHeader: new Parser()
                 .endianess("big")

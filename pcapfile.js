@@ -122,7 +122,7 @@ PcapFile.prototype.initFile = function(){
             }
             fs.open(self._fileName, 'r', function(err, fd) {
                 if (err) {
-                    self.logger.error(err.message);
+                    self._logger.error(err.message);
                     reject(err);
                 }
                 self._fd = fd;

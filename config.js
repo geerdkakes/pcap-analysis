@@ -8,13 +8,13 @@ var config ={};
 // filenames
 //
 // pcap file name (input)
-config.sourcePcapName = "2020-03-13_15.09.45_remotecar_eth0.pcap";
-config.destinationPcapName = "2020-03-13_15.09.51_remotestation_enp7s0.pcap";
+config.sourcePcapName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/2020-11-20_12.52.33_remotecar_eth0.pcap";
+config.destinationPcapName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/gNodeB-test1-12.55.pcap";
 // 
 // csv file names (output)
-config.sourceCsvName = "2020-03-13_15.09.45_remotecar_eth0.csv"
-config.destinationCsvName = "2020-03-13_15.09.51_remotestation_enp7s0.csv";
-config.resultFilename = "2020-03-13_15.09.51_analyse.csv";
+config.sourceCsvName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/2020-11-20_12.52.33_remotecar_eth0.csv"
+config.destinationCsvName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/gNodeB-test1-12.55.csv";
+config.resultFilename = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3.csv";
 
 
 
@@ -62,9 +62,35 @@ config.header_fields = [
 // to be matched and form a AND relation. 
 // 
 // used by 'filter_packet' function defined in 'index.js'
-config.destFilterSet = [
+remote_station = [
     [
-        // identifies packets arriving at remote station
+        // identifies control packets arriving at remote station
+        {field: "protocol", value: "udp"},
+        {field: "ipHeader.src.0", value: 10},
+        {field: "ipHeader.src.1", value: 38},
+        {field: "ipHeader.src.2", value: 253},
+        {field: "ipHeader.src.3", value: 128},
+        {field: "ipHeader.dst.0", value: 10},
+        {field: "ipHeader.dst.1", value: 39},
+        {field: "ipHeader.dst.2", value: 200},
+        {field: "ipHeader.dst.3", value: 121},
+        {field: "udpHeader.dest_port", value: 5001}
+    ],
+    [
+        // identifies time reference packets arriving at remote station
+        {field: "protocol", value: "udp"},
+        {field: "ipHeader.src.0", value: 10},
+        {field: "ipHeader.src.1", value: 38},
+        {field: "ipHeader.src.2", value: 253},
+        {field: "ipHeader.src.3", value: 128},
+        {field: "ipHeader.dst.0", value: 10},
+        {field: "ipHeader.dst.1", value: 39},
+        {field: "ipHeader.dst.2", value: 200},
+        {field: "ipHeader.dst.3", value: 121},
+        {field: "udpHeader.dest_port", value: 5002}
+    ],
+    [
+        // identifies video packets arriving at remote station
         {field: "protocol", value: "udp"},
         {field: "ipHeader.src.0", value: 10},
         {field: "ipHeader.src.1", value: 38},
@@ -126,14 +152,14 @@ config.destFilterSet = [
 // to be matched and form a AND relation. 
 // 
 // used by 'filter_packet' function defined in 'index.js'
-config.sourceFilterset = [
+filterset_remote_car = [
     [
-        // identifies packets arriving at remote station
+        // identifies video packets arriving at remote station
         {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 192},
-        {field: "ipHeader.src.1", value: 168},
-        {field: "ipHeader.src.2", value: 42},
-        {field: "ipHeader.src.3", value: 22},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
         {field: "ipHeader.dst.0", value: 10},
         {field: "ipHeader.dst.1", value: 38},
         {field: "ipHeader.dst.2", value: 253},
@@ -141,12 +167,12 @@ config.sourceFilterset = [
         {field: "udpHeader.dest_port", value: 5005}
     ],
     [
-        // identifies packets arriving at remote station
+        // identifies video packets arriving at remote station
         {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 192},
-        {field: "ipHeader.src.1", value: 168},
-        {field: "ipHeader.src.2", value: 42},
-        {field: "ipHeader.src.3", value: 22},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
         {field: "ipHeader.dst.0", value: 10},
         {field: "ipHeader.dst.1", value: 38},
         {field: "ipHeader.dst.2", value: 253},
@@ -154,12 +180,12 @@ config.sourceFilterset = [
         {field: "udpHeader.dest_port", value: 5006}
     ],        
     [
-        // identifies packets arriving at remote station
+        // identifies video packets arriving at remote station
         {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 192},
-        {field: "ipHeader.src.1", value: 168},
-        {field: "ipHeader.src.2", value: 42},
-        {field: "ipHeader.src.3", value: 22},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
         {field: "ipHeader.dst.0", value: 10},
         {field: "ipHeader.dst.1", value: 38},
         {field: "ipHeader.dst.2", value: 253},
@@ -167,12 +193,12 @@ config.sourceFilterset = [
         {field: "udpHeader.dest_port", value: 5007}
     ],
     [
-        // identifies packets arriving at remote station
+        // identifies video packets arriving at remote station
         {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 192},
-        {field: "ipHeader.src.1", value: 168},
-        {field: "ipHeader.src.2", value: 42},
-        {field: "ipHeader.src.3", value: 22},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
         {field: "ipHeader.dst.0", value: 10},
         {field: "ipHeader.dst.1", value: 38},
         {field: "ipHeader.dst.2", value: 253},
@@ -180,19 +206,37 @@ config.sourceFilterset = [
         {field: "udpHeader.dest_port", value: 5008}
     ],
     [
-        // identifies packets arriving at remote station
+        // identifies time reference packets arriving at remote station
         {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 192},
-        {field: "ipHeader.src.1", value: 168},
-        {field: "ipHeader.src.2", value: 42},
-        {field: "ipHeader.src.3", value: 22},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
         {field: "ipHeader.dst.0", value: 10},
         {field: "ipHeader.dst.1", value: 38},
         {field: "ipHeader.dst.2", value: 253},
         {field: "ipHeader.dst.3", value: 2},
         {field: "udpHeader.dest_port", value: 5002}
+    ],
+    [
+        // identifies control packets arriving at remote station
+        {field: "protocol", value: "udp"},
+        {field: "ipHeader.src.0", value: 22},
+        {field: "ipHeader.src.1", value: 1},
+        {field: "ipHeader.src.2", value: 0},
+        {field: "ipHeader.src.3", value: 3},
+        {field: "ipHeader.dst.0", value: 10},
+        {field: "ipHeader.dst.1", value: 38},
+        {field: "ipHeader.dst.2", value: 253},
+        {field: "ipHeader.dst.3", value: 2},
+        {field: "udpHeader.dest_port", value: 5001}
     ]
 ];
+
+// testrun with source from vehicle and destination for gNodeB
+
+config.sourceFilterset = filterset_remote_car;
+config.destFilterSet = filterset_remote_car;
 
 // export the config object
 module.exports = config;
