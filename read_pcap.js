@@ -174,7 +174,12 @@ function readGenericIPv6Packet(pcapdata){
 function readUDPPacket(pcapdata) {
     return pcapdata.readPacketUDPHeader(pcapdata)
             .then(function(result){
-                return result.readDataPacket(result);
+                if (result._currentPacket.udpHeader.src_port == "2152" && result._currentPacket.udpHeader.dst_port == "2152") {
+                    // port 2152 indicates gprs tunnel. first interpret this tunnel header
+                    return readGprsTunnelHeader(result);
+                } else {
+                    return result.readDataPacket(result);
+                }
             });
 
 }
@@ -187,6 +192,12 @@ function readTCPPacket(pcapdata) {
 }
 function readARPPacket(pcapdata) {
     return pcapdata.readArpPacket(pcapdata);
+}
+function readGprsTunnelHeader(pcapdata) {
+    return pcapdata.readGprsTunnelHeader(pcapdata)
+             .then(function(result){
+                 return result.readIPPacket(result);
+             });
 }
 
 // function to itterate of all packets in the file

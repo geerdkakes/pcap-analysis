@@ -18,6 +18,12 @@ var packetDefinitions = {
                     length: 6
                 })
                 .uint16("ethernet_type"),
+    ieee802_1q: new Parser()
+            .endianess("big")
+            .bit3("pcp")
+            .bit1("dei")
+            .uint12("vid")
+            .uint16("ethernet_type"),
     ipHeader: new Parser()
                 .endianess("big")
                 .bit4("version")
@@ -100,7 +106,25 @@ var packetDefinitions = {
                 .bit9("control_flags")
                 .uint16("length")
                 .uint16("chksum")
-                .uint16("urgent_ptr")
+                .uint16("urgent_ptr"),
+    gprsHeader: new Parser()
+                .endianess("big")
+                .bit3("version")
+                .bit1("pt")
+                .bit1("reserved")
+                .bit1("e")
+                .bit1("s")
+                .bit1("n_pdu")
+                .uint8("message_type")
+                .uint16("length")
+                .uint32("teid"),
+    gprsHeaderExtension: new Parser()
+                .endianess("big")
+                .uint8("length")
+                .bit4("pdu_type")
+                .bit6("spare")
+                .bit6("qfi")
+                .uint8("next_header")
 }
 
 module.exports = packetDefinitions;

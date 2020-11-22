@@ -55,6 +55,8 @@ function Packet() {
     this.udpHeader= {};
     this.tcpHeader= {};
     this.arpPacket = {};
+    this.gprsHeader = {};
+    this.gprsHeaderExtension = {};
     this.genericIPPacket = {};
     this.genericEthernetPacket = {};
     this.dataChksum= '';
@@ -247,6 +249,20 @@ PcapFile.prototype.initFile = function(){
 
             let buf = self.readBuf(14);
             self._currentPacket.ethernetHeader = packetDefinitions.ethernetHeader.parse(buf);
+            
+                // check special case if IEEE 802.1Q is inserted in ethernet header
+                switch(self._currentPacket.ethernetHeader.ethernet_type) {
+                    case 0x8100:
+                        let buf = self.readBuf(4);
+                        self._currentPacket.ethernetHeader.ieee802_1q = packetDefinitions.ieee802_1q.parse(buf);
+
+                        // we found IEEE 802.1q header in ethernet packet. Correct ethernet type.
+                        let real_ethernet_type = self._currentPacket.ethernetHeader.ieee802_1q.ethernet_type;
+                        self._currentPacket.ethernetHeader.ieee802_1q.ethernet_type = self._currentPacket.ethernetHeader.ethernet_type;
+                        self._currentPacket.ethernetHeader.ethernet_type = real_ethernet_type;
+                        break;
+                    default:
+                }
             resolve(self);
 
         });
@@ -409,6 +425,25 @@ PcapFile.prototype.initFile = function(){
                 }
 
          });
+    }
+    PcapFile.prototype.readGprsTunnelHeader = function(self){
+        if (!self) {
+            self = this;
+        }
+        return new Promise(function(resolve, reject) {
+            let buf = self.readBuf(8);
+            self._currentPacket.gprsHeader = packetDefinitions.gprsHeader.parse(buf);
+            // only able to interpret version 1
+            if (self._currentPacket.gprsHeader.e == "1") {
+                let extension = 1;
+                while (extension) {
+                    let buf = self.readBuf(4);
+                    self._currentPacket.gprsHeaderExtension=packetDefinitions.gprsHeaderExtension.parse(buf);
+                    extension = self._currentPacket.gprsHeaderExtension.next_header;
+                }
+            }
+            resolve(self);
+        });
     }
     PcapFile.prototype.readDataPacket = function(self){
         if (!self) {
