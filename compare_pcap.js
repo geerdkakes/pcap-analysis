@@ -70,6 +70,12 @@ ComparePcap.prototype.match_packet = function(sourcePacket, destinationPacket, m
 // to find a matching index.
 // returns an object with sourceIndex and destIndex or null when no match is found.
 ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
+    if (sourceArray === null || sourceArray[0] === 'undefined' || sourceArray[0] === null) {
+        return null;
+    }
+    if (destArray === null || destArray[0] === 'undefined' || destArray[0] === null) {
+        return null;
+    }
     firstSourceTimestamp = sourceArray[0]["pcapPacketHeader.ts_sec"];
     firstDestTimestamp = destArray[0]["pcapPacketHeader.ts_sec"];
     var laggingArray, laterTime, index, sequence;
@@ -92,7 +98,7 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
     if (index == undefined) {
         return null;
     }
-    if (sequence == "destLagging") {
+    if (sequence == "srcLagging") {
         return { sourceIndex: 0, destIndex: index};
     } else {
         return { sourceIndex: index, destIndex: 0};
