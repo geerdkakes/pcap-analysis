@@ -30,27 +30,47 @@ function readPacket(pcapdata){
     if (pcapdata.fileNotCompleted()) {
         return pcapdata.readPacketHeader(pcapdata)
             .then(function(result){
-                return result.readEthernetHeader(result);
-            })
-            .then(function(result){
-
-
-                switch(result._currentPacket.ethernetHeader.ethernet_type) {
-                    case 0x800:
-                        return readIPPacket(result);
-                    case 0x806:
-                        return readARPPacket(result);
-                    case 0x86dd:
-                        return readIPv6Packet(result);
+                switch (result._ethernet) {
+                    case 1:
+                        return result.readEthernetHeader(result)
+                            .then(function(result){
+                                switch(result._currentPacket.ethernetHeader.ethernet_type) {
+                                    case 0x800:
+                                        return readIPPacket(result);
+                                    case 0x806:
+                                        return readARPPacket(result);
+                                    case 0x86dd:
+                                        return readIPv6Packet(result);
+                                    default:
+                                        result._logger.info("Unknown ethernet protocol at packet " + 
+                                                    result._packetCnt + 
+                                                    " with ethernet type/length 0x" + 
+                                                    result._currentPacket.ethernetHeader.ethernet_type.toString(16)
+                                                    );
+                                        return readGenericEthernetPacket(result);
+                                }
+                        });
+                    case 101:
+                        return result.readPacketIPVersion(result)
+                            .then(function(result){
+                                switch (result._currentPacket.ipVersion.version) {
+                                    case 4:
+                                        return readIPPacket(result);
+                                    case 6:
+                                        return readIPv6Packet(result);
+                                    default:
+                                        result._logger.info("Unknown ip protocol at packet " + 
+                                                            result._packetCnt + 
+                                                            " with ip type: " + 
+                                                            result._currentPacket.ipVersion.version.toString(16)
+                                                            );
+                                }
+                    });
                     default:
-                        result._logger.info("Unknown ethernet protocol at packet " + 
-                                    result._packetCnt + 
-                                    " with ethernet type/length 0x" + 
-                                    result._currentPacket.ethernetHeader.ethernet_type.toString(16)
-                                    );
-                        return readGenericEthernetPacket(result);
-                  }
-            });
+                        result._logger.error("Unknown LINK-LAYER HEADER TYPE: " + result._ethernet);
+                        return;
+                }
+            })
         } else {
             return pcapdata;
         }
@@ -156,7 +176,7 @@ function readIPPacket(pcapdata){
                     result._logger.info("Unknown IP protocol at IP packet " + 
                                 result._packetCnt + 
                                 " with type " + 
-                                result._currentPacket.ethernetHeader.ethernet_type.toString(10)
+                                result._currentPacket.ipHeader.protocol.toString(10)
                                 );
                     return readGenericIPPacket(result);
             }

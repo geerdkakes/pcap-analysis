@@ -52,6 +52,7 @@ function Packet() {
     this.pcapPacketHeader= {};
     this.ethernetHeader= {};
     this.ipHeader= {};
+    this.ipVersion = {};
     this.udpHeader= {};
     this.tcpHeader= {};
     this.arpPacket = {};
@@ -109,6 +110,15 @@ PcapFile.prototype.readBuf = function(dataToRead) {
     var start = self._ptrBufferCurrentPacket;
     var end = self._ptrBufferCurrentPacket + dataToRead;
     self._ptrBufferCurrentPacket += dataToRead;
+    return self._buffer.slice(start, end);
+}
+
+// helper function to create a sub-buffer from the same address range to
+// which a packet has been stored.
+PcapFile.prototype.peakBuf = function(dataToRead) {
+    var self = this;
+    var start = self._ptrBufferCurrentPacket;
+    var end = self._ptrBufferCurrentPacket + dataToRead;
     return self._buffer.slice(start, end);
 }
 
@@ -263,6 +273,17 @@ PcapFile.prototype.initFile = function(){
                         break;
                     default:
                 }
+            resolve(self);
+
+        });
+    }
+    PcapFile.prototype.readPacketIPVersion = function(self) {
+        if (!self) {
+            self = this;
+        }
+        return new Promise(function(resolve, reject) {
+            let buf = self.peakBuf(1);
+            self._currentPacket.ipVersion= packetDefinitions.ipVersion.parse(buf);
             resolve(self);
 
         });

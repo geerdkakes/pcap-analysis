@@ -24,6 +24,9 @@ var packetDefinitions = {
             .bit1("dei")
             .bit12("vid")
             .uint16("ethernet_type"),
+    ipVersion: new Parser()
+            .endianess("big")
+            .bit4("version"),
     ipHeader: new Parser()
                 .endianess("big")
                 .bit4("version")
