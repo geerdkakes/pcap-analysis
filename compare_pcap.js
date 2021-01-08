@@ -83,11 +83,11 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
 
         laggingArray = sourceArray;
         laterTime = firstDestTimestamp;
-        sequence = "destLagging";
+        sequence = "srcLagging";
     } else {
         laggingArray = destArray;
         laterTime = firstSourceTimestamp;
-        sequence = "srcLagging";
+        sequence = "destLagging";
     }
     for (let i=0; i<laggingArray.length; i++) {
         if (laggingArray[i]["pcapPacketHeader.ts_sec"]>= laterTime) {
@@ -98,7 +98,7 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
     if (index == undefined) {
         return null;
     }
-    if (sequence == "srcLagging") {
+    if (sequence == "destLagging") {
         return { sourceIndex: 0, destIndex: index};
     } else {
         return { sourceIndex: index, destIndex: 0};
