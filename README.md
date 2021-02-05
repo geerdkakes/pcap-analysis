@@ -34,6 +34,9 @@ node --max-old-space-size=8192 consolidate_frames.js -i analysed_input.csv -o co
 You can also use `read_pcap.js` to convert a pcap file to a csv format. For now you need to write your own code to do this.
 Use `index.js` as an example.
 
+## changes
+
+5-2-2021: added operator field to filter, allowing for different types of matching (e.g. greater than, less than, contains, etc). Please see example `config.js` for the different options.
 
 ## Contribute
 

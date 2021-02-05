@@ -8,14 +8,24 @@ var config ={};
 // filenames
 //
 // pcap file name (input)
-config.sourcePcapName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/2020-11-20_12.52.33_remotecar_eth0.pcap";
-config.destinationPcapName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/gNodeB-test1-12.55.pcap";
+
+config.sourcePcapName = "source.pcap";
+config.destinationPcapName = "destination.pcap";
 // 
 // csv file names (output)
-config.sourceCsvName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/2020-11-20_12.52.33_remotecar_eth0.csv"
-config.destinationCsvName = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/gNodeB-test1-12.55.csv";
-config.resultFilename = "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3.csv";
+config.sourceCsvName = "source.csv"
+config.destinationCsvName = "destinations.csv";
+config.resultFilename = "matches.csv";
 
+// Note: if you capture packets using tcpdump. Consider using the following flags:
+//   tcpdum -i eth0 -n -B 4096 -w dump.pcap
+//     -B <buffer size>, eg: -B 4096 for a buffer of 4MByte
+//     -n to not reverse lookup domain names
+//     -w <filename> to write all data to a file
+//     -i <interface>
+//  
+//   If the command reports that packets were dropped by the kernel you might want to increase 
+//   buffersize or give some more time to establish a buffer.
 
 
 // ------------------------------------------------------------------------
@@ -59,87 +69,97 @@ config.header_fields = [
 // Defines the filters to filter the packets at the destination.
 // Extra objects can be added with field and value defined.
 // All objects together in the level two array define one packet 
-// to be matched and form a AND relation. 
+// to be matched and form an AND relation. 
 // 
+// The operator can be one of the following values:
+// eq: equal
+// ne: not equal
+// gt: greater than
+// lt: less than
+// ge: greater or equal
+// le: less or equal
+// contains: contains a value
+//
 // used by 'filter_packet' function defined in 'index.js'
+
 remote_station = [
     [
         // identifies control packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5001}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5001, operator: "eq"}
     ],
     [
         // identifies time reference packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5002}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5002, operator: "eq"}
     ],
     [
         // identifies video packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5005}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5005, operator: "eq"}
     ],
     [
         // identifies packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5006}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5006, operator: "eq"}
     ],        
     [
         // identifies packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5007}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5007, operator: "eq"}
     ],
     [
         // identifies packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 10},
-        {field: "ipHeader.src.1", value: 38},
-        {field: "ipHeader.src.2", value: 253},
-        {field: "ipHeader.src.3", value: 128},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 39},
-        {field: "ipHeader.dst.2", value: 200},
-        {field: "ipHeader.dst.3", value: 121},
-        {field: "udpHeader.dest_port", value: 5008}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 22, operator: "eq"},
+        {field: "ipHeader.src.1", value: 1, operator: "eq"},
+        {field: "ipHeader.src.2", value: 0, operator: "eq"},
+        {field: "ipHeader.src.3", value: 2, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 192, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5008, operator: "eq"}
     ]
 ];
 
@@ -155,88 +175,88 @@ remote_station = [
 filterset_remote_car = [
     [
         // identifies video packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5005}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5005, operator: "eq"}
     ],
     [
         // identifies video packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5006}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5006, operator: "eq"}
     ],        
     [
         // identifies video packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5007}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5007, operator: "eq"}
     ],
     [
         // identifies video packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5008}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5008, operator: "eq"}
     ],
     [
         // identifies time reference packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5002}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5002, operator: "eq"}
     ],
     [
         // identifies control packets arriving at remote station
-        {field: "protocol", value: "udp"},
-        {field: "ipHeader.src.0", value: 22},
-        {field: "ipHeader.src.1", value: 1},
-        {field: "ipHeader.src.2", value: 0},
-        {field: "ipHeader.src.3", value: 3},
-        {field: "ipHeader.dst.0", value: 10},
-        {field: "ipHeader.dst.1", value: 38},
-        {field: "ipHeader.dst.2", value: 253},
-        {field: "ipHeader.dst.3", value: 2},
-        {field: "udpHeader.dest_port", value: 5001}
+        {field: "protocol", value: "udp", operator: "eq"},
+        {field: "ipHeader.src.0", value: 192, operator: "eq"},
+        {field: "ipHeader.src.1", value: 168, operator: "eq"},
+        {field: "ipHeader.src.2", value: 1, operator: "eq"},
+        {field: "ipHeader.src.3", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.0", value: 10, operator: "eq"},
+        {field: "ipHeader.dst.1", value: 168, operator: "eq"},
+        {field: "ipHeader.dst.2", value: 207, operator: "eq"},
+        {field: "ipHeader.dst.3", value: 3, operator: "eq"},
+        {field: "udpHeader.dest_port", value: 5001, operator: "eq"}
     ]
 ];
 
 // testrun with source from vehicle and destination for gNodeB
 
 config.sourceFilterset = filterset_remote_car;
-config.destFilterSet = filterset_remote_car;
+config.destFilterSet = remote_station;
 
 // export the config object
 module.exports = config;

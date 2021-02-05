@@ -62,7 +62,32 @@ function filter_packet(filterSet) {
         for (items of filterSet) {
             var result = true;
             for (item of items) {
-                result = (packet[item.field] == item.value);
+                switch (item.operator) {
+                    case "eq": 
+                        result = (packet[item.field] == item.value);
+                        break;
+                    case "ne":
+                        result = (packet[item.field] != item.value);
+                        break;
+                    case "gt":
+                        result = (packet[item.field] > item.value);
+                        break;
+                    case "lt":
+                        result = (packet[item.field] < item.value);
+                        break;
+                    case "ge":
+                        result = (packet[item.field] >= item.value);
+                        break;
+                    case "le":
+                        result = (packet[item.field] <= item.value);
+                        break;
+                    case "contains":
+                        result = (packet[item.field].includes(item.value));
+                        break;
+                    default:
+                        // unknown operator
+                        result = false;
+                }
                 if (!result) break;
             }
             if (result) {
