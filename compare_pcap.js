@@ -27,7 +27,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 //
 // first create an object used to store the results of the compare action using:
 // var comparePcap = new ComparePcap(....)
-function ComparePcap(match_array, logger, result_filename, header_fields, multibar) {
+function ComparePcap(match_array, logger, result_filename, header_fields, multibar, max_delay) {
 
     this._match_array = match_array;
     this._logger = logger;
@@ -41,6 +41,7 @@ function ComparePcap(match_array, logger, result_filename, header_fields, multib
     this._progressBarTotal;
     this._progressBarMatches;
     this._multibar = multibar;
+    this._max_delay = max_delay;
 
 }
 // --------------------------------------------------------------------------------------
@@ -152,12 +153,12 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
             i = startIndex.destIndex
             for (; i<destinationArray.length; i++) {
                 destinationPacket = destinationArray[i];
-                if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"] <  sourcePacket["pcapPacketHeader.ts_sec"] ) {
+                if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"] + self._max_delay <  sourcePacket["pcapPacketHeader.ts_sec"] ) {
                     // start at least with searching at the same second
                     startIndex.destIndex = i;
                 } else {
-                    if (destinationPacket["pcapPacketHeader.ts_sec"] > sourcePacket["pcapPacketHeader.ts_sec"] + 1) {
-                        // more than 1 second difference, give up
+                    if (destinationPacket["pcapPacketHeader.ts_sec"] > sourcePacket["pcapPacketHeader.ts_sec"] + self._max_delay) {
+                        // more than max_delay second difference, give up
                         break;
                     }
                 }

@@ -51,7 +51,7 @@ const multibar = new cliProgress.MultiBar({
 }, cliProgress.Presets.shades_grey);
 
 // new comparePcap object using template-object
-var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar);
+var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar, config.max_delay);
 
 // define our own filter function, used by read_pcap function to store only the relevant packets.
 function filter_packet(filterSet) {
