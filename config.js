@@ -28,10 +28,18 @@ config.resultFilename = "matches.csv";
 //   buffersize or give some more time to establish a buffer.
 
 
+
 // ----------------------------------------------------------------------
-// maximum delay (or offset) in which packets are still matched.
-// be warned. The larger the delay (in seconds), the longer the algorith will run
-config.max_delay = 1;
+// Timing variables:
+// maximum delay in which packets are still matched.
+// be warned. The larger the delay (in useconds), the longer the algorith will run
+config.max_delay = 500000; // 0,5 seconds
+
+// maximum error allowed to match packets. The larger this value the longer the search
+config.max_error = 500000; // 0,5 seconds
+
+// offset to use if source and destination are not in sync
+config.offset = 0;
 
 
 // ------------------------------------------------------------------------

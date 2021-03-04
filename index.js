@@ -37,7 +37,19 @@ const debuglevel = (typeof args.d === 'undefined' || args.d === null) ? "error" 
 var logger = require('./logger')(debuglevel);
 
 // read config from configfile (javascript format)
-const config = require(configFilename);
+var config = require(configFilename);
+
+// check available parameters
+if (typeof config.max_delay === 'undefined' || config.max_delay === null) {
+    config.max_delay = 500000;
+}
+if (typeof config.max_error === 'undefined' || config.max_error === null) {
+    config.max_error = 500000;
+}
+if (typeof config.offset === 'undefined' || config.offset === null) {
+    config.offset = 0;
+}
+
 
 // declare variables destination and source Array. Will be defined using read_pcap function.
 var destinationArray;
@@ -51,7 +63,7 @@ const multibar = new cliProgress.MultiBar({
 }, cliProgress.Presets.shades_grey);
 
 // new comparePcap object using template-object
-var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar, config.max_delay);
+var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar, config.max_delay, config.max_error, config.offset);
 
 // define our own filter function, used by read_pcap function to store only the relevant packets.
 function filter_packet(filterSet) {

@@ -27,7 +27,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 //
 // first create an object used to store the results of the compare action using:
 // var comparePcap = new ComparePcap(....)
-function ComparePcap(match_array, logger, result_filename, header_fields, multibar, max_delay) {
+function ComparePcap(match_array, logger, result_filename, header_fields, multibar, max_delay, max_error, offset) {
 
     this._match_array = match_array;
     this._logger = logger;
@@ -42,6 +42,8 @@ function ComparePcap(match_array, logger, result_filename, header_fields, multib
     this._progressBarMatches;
     this._multibar = multibar;
     this._max_delay = max_delay;
+    this._max_error = max_error;
+    this._offset = offset;
 
 }
 // --------------------------------------------------------------------------------------
@@ -153,12 +155,15 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
             i = startIndex.destIndex
             for (; i<destinationArray.length; i++) {
                 destinationPacket = destinationArray[i];
-                if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"] + self._max_delay <  sourcePacket["pcapPacketHeader.ts_sec"] ) {
+                if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"]*1000000 + destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_usec"] 
+                                           + self._max_error + self._offset
+                                           <  sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"]  ) {
                     // start at least with searching at the same second
                     startIndex.destIndex = i;
                 } else {
-                    if (destinationPacket["pcapPacketHeader.ts_sec"] > sourcePacket["pcapPacketHeader.ts_sec"] + self._max_delay) {
-                        // more than max_delay second difference, give up
+                    if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] + self._offset
+                           > sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"] + self._max_delay) {
+                        // more than max_delay usecond difference, give up
                         break;
                     }
                 }
