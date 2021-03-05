@@ -181,6 +181,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                         "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
                         "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
                         "protocol": sourcePacket["protocol"],
+                        "delay_usec": ((destinationPacket["pcapPacketHeader.ts_sec"] - sourcePacket["pcapPacketHeader.ts_sec"])*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - sourcePacket["pcapPacketHeader.ts_usec"]),
                         "lost": false
                     })
                     lastFoundAt = i;

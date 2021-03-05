@@ -70,6 +70,7 @@ config.header_fields = [
     {"id": "source_pcapPacketHeader.ts_usec", "title": "source_pcapPacketHeader.ts_usec"},
     {"id": "destination_pcapPacketHeader.ts_sec", "title": "destination_pcapPacketHeader.ts_sec"},
     {"id": "destination_pcapPacketHeader.ts_usec", "title": "destination_pcapPacketHeader.ts_usec"},
+    {"id": "delay_usec", "title": "delay_usec"},
     {"id": "pcapPacketHeader.orig_len", "title": "pcapPacketHeader.orig_len"},
     {"id": "udpHeader.dest_port", "title": "udpHeader.dest_port"},
     {"id": "udpHeader.src_port", "title": "udpHeader.src_port"},
