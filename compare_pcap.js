@@ -79,21 +79,21 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
     if (destArray === null || destArray[0] === 'undefined' || destArray[0] === null) {
         return null;
     }
-    firstSourceTimestamp = sourceArray[0]["pcapPacketHeader.ts_sec"];
-    firstDestTimestamp = destArray[0]["pcapPacketHeader.ts_sec"];
+    firstSourceTimestamp = sourceArray[0]["pcapPacketHeader.ts_sec"]*1000000 + sourceArray[0]["pcapPacketHeader.ts_usec"];
+    firstDestTimestamp = destArray[0]["pcapPacketHeader.ts_sec"]*1000000 + destArray[0]["pcapPacketHeader.ts_usec"] - this._offset;
     var laggingArray, laterTime, index, sequence;
     if (firstSourceTimestamp <= firstDestTimestamp) {
 
         laggingArray = sourceArray;
-        laterTime = firstDestTimestamp;
+        laterTime = firstDestTimestamp - this._offset;
         sequence = "srcLagging";
     } else {
         laggingArray = destArray;
-        laterTime = firstSourceTimestamp;
+        laterTime = firstSourceTimestamp + this._offset;
         sequence = "destLagging";
     }
     for (let i=0; i<laggingArray.length; i++) {
-        if (laggingArray[i]["pcapPacketHeader.ts_sec"]>= laterTime) {
+        if (laggingArray[i]["pcapPacketHeader.ts_sec"]*1000000 + laggingArray[i]["pcapPacketHeader.ts_usec"] >= laterTime) {
             index = (i>0)? i-1:0;
             break;
         }
@@ -156,12 +156,12 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
             for (; i<destinationArray.length; i++) {
                 destinationPacket = destinationArray[i];
                 if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"]*1000000 + destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_usec"] 
-                                           + self._max_error + self._offset
+                                           + self._max_error - self._offset
                                            <  sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"]  ) {
                     // start at least with searching at the same second
                     startIndex.destIndex = i;
                 } else {
-                    if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] + self._offset
+                    if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - self._offset
                            > sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"] + self._max_delay) {
                         // more than max_delay usecond difference, give up
                         break;
