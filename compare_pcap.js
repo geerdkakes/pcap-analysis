@@ -85,7 +85,7 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
     if (firstSourceTimestamp <= firstDestTimestamp) {
 
         laggingArray = sourceArray;
-        laterTime = firstDestTimestamp - this._offset;
+        laterTime = firstDestTimestamp;
         sequence = "srcLagging";
     } else {
         laggingArray = destArray;
