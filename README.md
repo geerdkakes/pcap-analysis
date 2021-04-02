@@ -10,6 +10,20 @@ determined. The function creates several csv-files to which all information is s
     |   pcap   |                        |   pcap    |
      ----------                          -----------
 
+## recording pcap's
+
+Packets can be captured easily using tcpdump. Consider using the following flags:
+   tcpdum -i eth0 -n -B 4096 -w dump.pcap
+     -B <buffer size>, eg: -B 4096 for a buffer of 4MByte
+     -n to not reverse lookup domain names
+     -w <filename> to write all data to a file
+     -i <interface>
+  
+   If the command reports that packets were dropped by the kernel you might want to increase 
+   buffersize or give some more time to establish a buffer.
+
+Also packets can be captured using wireshark. You should save using the older pcap format.
+
 ## usage
 
 All configurations are stored in `config.js`. Here you can define the source and destination pcap file names,
