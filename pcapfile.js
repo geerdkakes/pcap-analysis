@@ -60,13 +60,14 @@ function Packet() {
     this.gprsHeaderExtension = {};
     this.genericIPPacket = {};
     this.genericEthernetPacket = {};
+    this.rtpHeader = {};
     this.dataChksum= '';
 }
 
 // main object PcapFile
 // used to create a new pcapfile object
 // called from function 'read_pcap.js'
-function PcapFile(fileName, logger, filter) {
+function PcapFile(fileName, logger, filter, decoders) {
       this._buffer = Buffer.alloc(maxPacketLength);
       this._fileName = fileName;
       this._filter = filter;
@@ -84,6 +85,7 @@ function PcapFile(fileName, logger, filter) {
       this._progressBar;
       this._packetsWritenToCSV = 0;
       this._frameTracker = [];
+      this._decoders = decoders;
     }
 
 // helper function to determine if we reached end of file
@@ -479,6 +481,50 @@ PcapFile.prototype.initFile = function(){
                 let buf = self.readBuf(length);
                 var chksum = checksum(buf);
                 self._currentPacket.dataChksum = chksum;
+                if (self._decoders && self._decoders.length > 0) {
+                    let packet = flattenObject(self._currentPacket);
+                    for (decoder of self._decoders) {
+                        let result = true;
+                        for (item of decoder["matchfields"]) {
+                            switch (item.operator) {
+                                case "eq": 
+                                    result = (packet[item.field] == item.value);
+                                    break;
+                                case "ne":
+                                    result = (packet[item.field] != item.value);
+                                    break;
+                                case "gt":
+                                    result = (packet[item.field] > item.value);
+                                    break;
+                                case "lt":
+                                    result = (packet[item.field] < item.value);
+                                    break;
+                                case "ge":
+                                    result = (packet[item.field] >= item.value);
+                                    break;
+                                case "le":
+                                    result = (packet[item.field] <= item.value);
+                                    break;
+                                case "contains":
+                                    result = (packet[item.field].includes(item.value));
+                                    break;
+                                default:
+                                    // unknown operator
+                                    result = false;
+                            }
+                            if (!result) break;
+                        }
+                        if (result) {
+                            // found match, try decode using this decoder
+                            switch (decoder.protocol) {
+                                case "rtp":
+                                    self.readRTP(self,buf);
+                                    break;
+                            }
+                        }
+                    
+                    }
+                }
                 resolve(self);
 
             } else {
@@ -487,5 +533,10 @@ PcapFile.prototype.initFile = function(){
             }
         });
     }
-  
+    PcapFile.prototype.readRTP = function(self,buf) {
+        if (!self) {
+            self = this;
+        }
+        self._currentPacket.rtpHeader = packetDefinitions.rtpHeader.parse(buf);
+    }
   module.exports = PcapFile;

@@ -86,6 +86,9 @@ header_fields = [
     {"id": "arpPacket.dst_ip.1", "title": "ap_dst_ip.1"},
     {"id": "arpPacket.dst_ip.2", "title": "ap_dst_ip.2"},
     {"id": "arpPacket.dst_ip.3", "title": "ap_dst_ip.3"},
+    {"id": "rtpHeader.sequence_number", "title": "rtp_sequence_number"},
+    {"id": "rtpHeader.timestamp", "title": "rt_timestamp"},
+    {"id": "rtpHeader.marker", "title": "rtp_marker"},
     {"id": "dataChksum", "title": "dataChksum"}
 ]
 

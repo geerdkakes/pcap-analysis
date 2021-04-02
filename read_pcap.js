@@ -397,10 +397,10 @@ function time_diff(t1_sec, t1_msec, t2_sec, t2_msec) {
 //
 // this function is called from 'index.js' to read different pcapfiles and than to compare the result.
 // this function returns a promise
-function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar) {
+function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders) {
     return new Promise(function(resolve_readpcap, reject_readpcap) {
-        (function(inputfile, csvfile, logger, filter, keep_in_memory){
-            var pcap1 = new PcapFile(inputfile, logger, filter);
+        (function(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders){
+            var pcap1 = new PcapFile(inputfile, logger, filter, decoders);
 
             if (keep_in_memory) {
                 keep_buffer = true;
@@ -435,7 +435,7 @@ function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar)
                 reject_readpcap(result);
                 return logger.error("err at packet: " + result._packetCnt + " with message: " + result);
             });
-        })(inputfile, csvfile, logger, filter, keep_in_memory)
+        })(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders)
     });
 }
 

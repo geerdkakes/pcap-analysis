@@ -41,6 +41,37 @@ config.max_error = 500000; // 0,5 seconds
 // offset to use if source and destination are not in sync
 config.offset = 0;
 
+// decoding combination
+config.decoders = [
+        {
+            matchfields: [
+                {field: "protocol", value: "udp", operator: "eq"},
+                {field: "udpHeader.dest_port", value: 5005, operator: "eq"}
+            ],
+            protocol: "rtp"
+        },
+        {
+            matchfields: [
+                {field: "protocol", value: "udp", operator: "eq"},
+                {field: "udpHeader.dest_port", value: 5006, operator: "eq"}
+            ],
+            protocol: "rtp"
+        },
+        {
+            matchfields: [
+                {field: "protocol", value: "udp", operator: "eq"},
+                {field: "udpHeader.dest_port", value: 5007, operator: "eq"}
+            ],
+            protocol: "rtp"
+        },
+        {
+            matchfields: [
+                {field: "protocol", value: "udp", operator: "eq"},
+                {field: "udpHeader.dest_port", value: 5008, operator: "eq"}
+            ],
+            protocol: "rtp"
+        }
+    ]
 
 // ------------------------------------------------------------------------
 // match array
@@ -75,6 +106,9 @@ config.header_fields = [
     {"id": "udpHeader.dest_port", "title": "udpHeader.dest_port"},
     {"id": "udpHeader.src_port", "title": "udpHeader.src_port"},
     {"id": "protocol", "title": "protocol"},
+    {"id": "rtpHeader.sequence_number", "title": "rtpHeader.sequence_number"},
+    {"id": "rtpHeader.timestamp", "title": "rtpHeader.timestamp"},
+    {"id": "rtpHeader.marker", "title": "rtpHeader.marker"},
     {"id": "lost", "title": "lost"}
 ];
 
@@ -122,7 +156,8 @@ remote_station = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5002, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5002, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies video packets arriving at remote station
@@ -135,7 +170,8 @@ remote_station = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5005, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5005, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies packets arriving at remote station
@@ -148,7 +184,8 @@ remote_station = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5006, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5006, operator: "eq"},
+        {hint: "rtp"}
     ],        
     [
         // identifies packets arriving at remote station
@@ -161,7 +198,8 @@ remote_station = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5007, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5007, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies packets arriving at remote station
@@ -174,7 +212,8 @@ remote_station = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5008, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5008, operator: "eq"},
+        {hint: "rtp"}
     ]
 ];
 
@@ -199,7 +238,8 @@ filterset_remote_car = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5005, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5005, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies video packets arriving at remote station
@@ -212,7 +252,8 @@ filterset_remote_car = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5006, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5006, operator: "eq"},
+        {hint: "rtp"}
     ],        
     [
         // identifies video packets arriving at remote station
@@ -225,7 +266,8 @@ filterset_remote_car = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5007, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5007, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies video packets arriving at remote station
@@ -238,7 +280,8 @@ filterset_remote_car = [
         {field: "ipHeader.dst.1", value: 168, operator: "eq"},
         {field: "ipHeader.dst.2", value: 207, operator: "eq"},
         {field: "ipHeader.dst.3", value: 3, operator: "eq"},
-        {field: "udpHeader.dest_port", value: 5008, operator: "eq"}
+        {field: "udpHeader.dest_port", value: 5008, operator: "eq"},
+        {hint: "rtp"}
     ],
     [
         // identifies time reference packets arriving at remote station

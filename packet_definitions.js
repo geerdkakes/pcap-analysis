@@ -127,7 +127,18 @@ var packetDefinitions = {
                 .bit4("pdu_type")
                 .bit6("spare")
                 .bit6("qfi")
-                .uint8("next_header")
+                .uint8("next_header"),
+    rtpHeader: new Parser()
+                .endianess("big")
+                .bit2("version")
+                .bit1("padding")
+                .bit1("extension")
+                .bit4("csrc_count")
+                .bit1("marker")
+                .bit7("payload_type")
+                .uint16("sequence_number")
+                .uint32("timestamp")
+                .uint32("ssrc")
 }
 
 module.exports = packetDefinitions;
