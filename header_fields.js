@@ -1,7 +1,6 @@
 header_fields = [
     {"id": "packetNr", "title": "packetnr"},
     {"id": "protocol", "title": "protocol"},
-    {"id": "frameCnt", "title": "frameCnt"},
     {"id": "pcapPacketHeader.ts_sec", "title": "ph_ts_sec"},
     {"id": "pcapPacketHeader.ts_usec", "title": "ph_ts_usec"},
     {"id": "pcapPacketHeader.incl_len", "title": "ph_incl_len"},
