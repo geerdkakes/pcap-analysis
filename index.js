@@ -54,6 +54,8 @@ if (typeof config.offset === 'undefined' || config.offset === null) {
 // declare variables destination and source Array. Will be defined using read_pcap function.
 var destinationArray;
 var sourceArray;
+var upMatches;
+var downMatches;
 
 // progress bar - only working when using command line
 const multibar = new cliProgress.MultiBar({
@@ -74,31 +76,37 @@ function filter_packet(filterSet) {
         for (items of filterSet) {
             var result = true;
             for (item of items) {
-                switch (item.operator) {
-                    case "eq": 
-                        result = (packet[item.field] == item.value);
-                        break;
-                    case "ne":
-                        result = (packet[item.field] != item.value);
-                        break;
-                    case "gt":
-                        result = (packet[item.field] > item.value);
-                        break;
-                    case "lt":
-                        result = (packet[item.field] < item.value);
-                        break;
-                    case "ge":
-                        result = (packet[item.field] >= item.value);
-                        break;
-                    case "le":
-                        result = (packet[item.field] <= item.value);
-                        break;
-                    case "contains":
-                        result = (packet[item.field].includes(item.value));
-                        break;
-                    default:
-                        // unknown operator
-                        result = false;
+                if (item.type && item.type == "direction") {
+                    // direction is set. Add direction field to packet
+                    packet.direction = item.value;
+                }
+                if (!item.type || item.type == "match") {
+                    switch (item.operator) {
+                        case "eq": 
+                            result = (packet[item.field] == item.value);
+                            break;
+                        case "ne":
+                            result = (packet[item.field] != item.value);
+                            break;
+                        case "gt":
+                            result = (packet[item.field] > item.value);
+                            break;
+                        case "lt":
+                            result = (packet[item.field] < item.value);
+                            break;
+                        case "ge":
+                            result = (packet[item.field] >= item.value);
+                            break;
+                        case "le":
+                            result = (packet[item.field] <= item.value);
+                            break;
+                        case "contains":
+                            result = (packet[item.field].includes(item.value));
+                            break;
+                        default:
+                            // unknown operator
+                            result = false;
+                    }
                 }
                 if (!result) break;
             }
@@ -116,15 +124,23 @@ read_pcap(config.sourcePcapName, config.sourceCsvName, logger, filter_packet(con
 .then(function(result){
     sourceArray = result._packets;
     logger.debug("Source list contains " + sourceArray.length + " entries");
+    // start reading destination pcapfile
     return read_pcap(config.destinationPcapName, config.destinationCsvName, logger, filter_packet(config.destFilterSet), true, multibar, config.decoders)
 })
 .then(function(result){
     destinationArray = result._packets;
     logger.debug("Destination list contains " + destinationArray.length + " entries");
-    return comparePcap.comparePcapArrays(sourceArray, destinationArray);
+    return comparePcap.comparePcapArrays(sourceArray, destinationArray, "up");
 })
 .then(function(result){
-    return comparePcap.writeRecords(result);
+    logger.debug("Found " + result.length + " matches in up direction");
+    upMatches = result;
+    return comparePcap.comparePcapArrays(sourceArray, destinationArray, "down");
+})
+.then(function(result){
+    logger.debug("Found " + result.length + " matches in down direction");
+    downMatches = result;
+    return comparePcap.writeRecords(upMatches.concat(downMatches));
 })
 .then(function(){
     // stop all bars

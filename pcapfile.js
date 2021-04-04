@@ -61,7 +61,8 @@ function Packet() {
     this.genericIPPacket = {};
     this.genericEthernetPacket = {};
     this.rtpHeader = {};
-    this.dataChksum= '';
+    this.dataChksum = '';
+    this.direction = '';
 }
 
 // main object PcapFile

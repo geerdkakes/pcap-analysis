@@ -114,7 +114,7 @@ ComparePcap.prototype.findStartIndex = function(sourceArray, destArray){
 ComparePcap.prototype.writeRecords = function(resultArray) {
     var self = this;
     if (!resultArray) {
-        resultArray = self._resultArray;
+        resultArray = self._resultArray["up"].concat(self._resultArray["down"]);
     }
     return self._csvWriter.writeRecords(resultArray);
 }
@@ -123,103 +123,119 @@ ComparePcap.prototype.writeRecords = function(resultArray) {
 //
 // main function to compare two arrays. the function takes a source and destination array
 // this function returns a promise
-ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray) {
+ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray, direction) {
     var self = this;
     return new Promise(function(resolve, reject) {
-        var i;
-        var lastFoundAt = 0;
-        // find start index
-        var startIndex = self.findStartIndex(sourceArray, destinationArray);
-        if (!startIndex) {
-            self._logger.error("comparePcapArrays: no timestamps found that match");
-            reject(new Error("comparePcapArray->findStartIndex: no timestamps found that match"));
-        }
-        var nrOfMatches = 0;
-        var nrOfLosts = 0;
-        var lastMatchAtResultArray = 0;
-        if (self._multibar) {
-            self._progressBarTotal = self._multibar.create(Math.floor((sourceArray.length-startIndex.sourceIndex)/1000), 0);
-            self._progressBarMatches = self._multibar.create(Math.floor((sourceArray.length-startIndex.sourceIndex)/1000), 0);
-            if (self._progressBarTotal) {
-                self._progressBarTotal.update(0,{name: "compare source and destination"});
+        (function(self, sourceArray, destinationArray, direction) {
+            if (direction == "down") {
+                let tmp_array = sourceArray;
+                sourceArray = destinationArray;
+                destinationArray = tmp_array;
             }
-            if (self._progressBarMatches) {
-                self._progressBarMatches.update(0,{name: "compare source and destination"});
+            var i;
+            var lastFoundAt = 0;
+            self._resultArray[direction] = [];
+            // find start index
+            var startIndex = self.findStartIndex(sourceArray, destinationArray);
+            if (!startIndex) {
+                self._logger.error("comparePcapArrays: no timestamps found that match");
+                reject(new Error("comparePcapArray->findStartIndex: no timestamps found that match"));
             }
-        }
-        for (let p = startIndex.sourceIndex; p< sourceArray.length; p++) {
-            if (p % 1000 == 0 && self._progressBarTotal) {
-                self._progressBarTotal.update(Math.floor(p/1000));
+            var nrOfMatches = 0;
+            var nrOfLosts = 0;
+            var lastMatchAtResultArray = 0;
+            if (self._multibar) {
+                self._progressBarTotal = self._multibar.create(Math.floor((sourceArray.length-startIndex.sourceIndex)/1000), 0);
+                self._progressBarMatches = self._multibar.create(Math.floor((sourceArray.length-startIndex.sourceIndex)/1000), 0);
+                if (self._progressBarTotal) {
+                    self._progressBarTotal.update(0,{name: "compare source and destination"});
+                }
+                if (self._progressBarMatches) {
+                    self._progressBarMatches.update(0,{name: "compare source and destination"});
+                }
             }
-            sourcePacket = sourceArray[p];
-            i = startIndex.destIndex
-            for (; i<destinationArray.length; i++) {
-                destinationPacket = destinationArray[i];
-                if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"]*1000000 + destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_usec"] 
-                                           + self._max_error - self._offset
-                                           <  sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"]  ) {
-                    // start at least with searching at the same second
-                    startIndex.destIndex = i;
-                } else {
-                    if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - self._offset
-                           > sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"] + self._max_delay) {
-                        // more than max_delay usecond difference, give up
+            for (let p = startIndex.sourceIndex; p< sourceArray.length; p++) {
+                if (p % 1000 == 0 && self._progressBarTotal) {
+                    self._progressBarTotal.update(Math.floor(p/1000));
+                }
+                sourcePacket = sourceArray[p];
+                if (sourcePacket["direction"] != direction) {
+                    continue;
+                }
+                i = startIndex.destIndex
+                for (; i<destinationArray.length; i++) {
+                    destinationPacket = destinationArray[i];
+                    if (destinationPacket["direction"] != direction) {
+                        continue;
+                    }
+                    if (destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_sec"]*1000000 + destinationArray[startIndex.destIndex]["pcapPacketHeader.ts_usec"] 
+                                            + self._max_error - self._offset
+                                            <  sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"]  ) {
+                        // start at least with searching at the same second
+                        startIndex.destIndex = i;
+                    } else {
+                        if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - self._offset
+                            > sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"] + self._max_delay) {
+                            // more than max_delay usecond difference, give up
+                            break;
+                        }
+                    }
+                    if (!sourcePacket.found && self.match_packet(sourcePacket, destinationPacket, self._match_array)) {
+                        let delay_usec = ((destinationPacket["pcapPacketHeader.ts_sec"] - sourcePacket["pcapPacketHeader.ts_sec"] )*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - sourcePacket["pcapPacketHeader.ts_usec"]);
+                        self._resultArray[direction].push({
+                            "source_packetNr": sourcePacket["packetNr"],
+                            "destination_packetNr": destinationPacket["packetNr"],
+                            "frameCnt": sourcePacket["frameCnt"],
+                            "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
+                            "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
+                            "destination_pcapPacketHeader.ts_sec": destinationPacket["pcapPacketHeader.ts_sec"],
+                            "destination_pcapPacketHeader.ts_usec": destinationPacket["pcapPacketHeader.ts_usec"],
+                            "pcapPacketHeader.incl_len": sourcePacket["pcapPacketHeader.incl_len"],
+                            "pcapPacketHeader.orig_len": sourcePacket["pcapPacketHeader.orig_len"],
+                            "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
+                            "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
+                            "rtpHeader.timestamp": sourcePacket["rtpHeader.timestamp"],
+                            "rtpHeader.sequence_number": sourcePacket["rtpHeader.sequence_number"],
+                            "rtpHeader.marker": sourcePacket["rtpHeader.marker"],
+                            "protocol": sourcePacket["protocol"],
+                            "delay_usec": delay_usec,
+                            "direction": direction,
+                            "lost": false
+                        })
+                        lastFoundAt = i;
+                        lastMatchAtResultArray = self._resultArray[direction].length;
+                        nrOfMatches++;
+                        if (nrOfMatches%1000 == 0 && self._progressBarMatches) {
+                            self._progressBarMatches.update(Math.floor(nrOfMatches/1000));
+                        }
+                        sourcePacket.found = true;
                         break;
                     }
                 }
-                if (!sourcePacket.found && self.match_packet(sourcePacket, destinationPacket, self._match_array)) {
-                    self._resultArray.push({
-                        "source_packetNr": sourcePacket["packetNr"],
-                        "destination_packetNr": destinationPacket["packetNr"],
-                        "frameCnt": sourcePacket["frameCnt"],
-                        "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
-                        "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
-                        "destination_pcapPacketHeader.ts_sec": destinationPacket["pcapPacketHeader.ts_sec"],
-                        "destination_pcapPacketHeader.ts_usec": destinationPacket["pcapPacketHeader.ts_usec"],
-                        "pcapPacketHeader.incl_len": sourcePacket["pcapPacketHeader.incl_len"],
-                        "pcapPacketHeader.orig_len": sourcePacket["pcapPacketHeader.orig_len"],
-                        "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
-                        "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
-                        "rtpHeader.timestamp": sourcePacket["rtpHeader.timestamp"],
-                        "rtpHeader.sequence_number": sourcePacket["rtpHeader.sequence_number"],
-                        "rtpHeader.marker": sourcePacket["rtpHeader.marker"],
-                        "protocol": sourcePacket["protocol"],
-                        "delay_usec": ((destinationPacket["pcapPacketHeader.ts_sec"] - sourcePacket["pcapPacketHeader.ts_sec"])*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - sourcePacket["pcapPacketHeader.ts_usec"]),
-                        "lost": false
-                    })
-                    lastFoundAt = i;
-                    lastMatchAtResultArray = self._resultArray.length;
-                    nrOfMatches++;
-                    if (nrOfMatches%1000 == 0 && self._progressBarMatches) {
-                        self._progressBarMatches.update(Math.floor(nrOfMatches/1000));
-                    }
-                    sourcePacket.found = true;
-                    break;
+                if (!sourcePacket.found && nrOfMatches>0) {
+                        // we lost this packet
+                        nrOfLosts++;
+                        self._resultArray[direction].push({
+                            "source_packetNr": sourcePacket["packetNr"],
+                            "frameCnt": sourcePacket["frameCnt"],
+                            "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
+                            "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
+                            "pcapPacketHeader.incl_len": sourcePacket["pcapPacketHeader.incl_len"],
+                            "pcapPacketHeader.orig_len": sourcePacket["pcapPacketHeader.orig_len"],
+                            "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
+                            "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
+                            "protocol": sourcePacket["protocol"],
+                            "lost": true
+                        })
                 }
             }
-            if (!sourcePacket.found && nrOfMatches>0) {
-                    // we lost this packet
-                    nrOfLosts++;
-                    self._resultArray.push({
-                        "source_packetNr": sourcePacket["packetNr"],
-                        "frameCnt": sourcePacket["frameCnt"],
-                        "source_pcapPacketHeader.ts_sec": sourcePacket["pcapPacketHeader.ts_sec"],
-                        "source_pcapPacketHeader.ts_usec": sourcePacket["pcapPacketHeader.ts_usec"],
-                        "pcapPacketHeader.incl_len": sourcePacket["pcapPacketHeader.incl_len"],
-                        "pcapPacketHeader.orig_len": sourcePacket["pcapPacketHeader.orig_len"],
-                        "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
-                        "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
-                        "protocol": sourcePacket["protocol"],
-                        "lost": true
-                    })
-            }
-        }
-        self._logger.info("found: " + nrOfMatches + " and lost: " + 
-                          (lastMatchAtResultArray - nrOfMatches) + 
-                          " (Matched: " + Math.floor(100*(nrOfMatches/(lastMatchAtResultArray - nrOfMatches))) +
-                          "%)");
-
-        resolve(self._resultArray.slice(0, lastMatchAtResultArray));
+            self._logger.info("found: " + nrOfMatches + " and lost: " + 
+                            (lastMatchAtResultArray - nrOfMatches) + 
+                            " (Matched: " + Math.floor(100*(nrOfMatches/(lastMatchAtResultArray - nrOfMatches))) +
+                            "%)");
+            self._resultArray[direction] = self._resultArray[direction].slice(0, lastMatchAtResultArray);
+            resolve(self._resultArray[direction]);
+        }(self, sourceArray, destinationArray, direction));
     });
 }
 
