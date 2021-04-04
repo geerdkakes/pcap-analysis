@@ -87,6 +87,8 @@ Use `index.js` as an example.
 ## changes
 
 5-2-2021: added operator field to filter, allowing for different types of matching (e.g. greater than, less than, contains, etc). Please see example `config.js` for the different options.
+5-3-2021: added extra offset parameters to help the search when both pcaps are no aligned correctly in time.
+4-4-2021: added decoder for rtp packets. Now the rtp timestamp is used to recognise which packets belong to a frame.
 
 ## Contribute
 
