@@ -12,8 +12,8 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs')
 
 // read command line flags
-const filename_in = (typeof args.i === "undefined" || args.i === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3.csv" : args.i;
-const filename_out = (typeof args.o === "undefined" || args.o === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_3_consolidated.csv" : args.o;
+const filename_in = (typeof args.i === "undefined" || args.i === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_1_car-gNodeB.csv" : args.i;
+const filename_out = (typeof args.o === "undefined" || args.o === null) ? "/Users/geerd/data/cases/helmond/drive test/20-11-2020 remote driving test/test_1_car-gNodeB_consolidated.csv" : args.o;
 
 // array to which input csv is parsed
 const read_array = [];
@@ -23,13 +23,14 @@ const cons_array =[];
 
 // header fields which will be writen to the output csv
 const header_fields = [
-  {"id": "frameCnt", "title": "frameCnt"},
+  {"id": "rtpTimestamp", "title": "rtpTimestamp"},
   {"id": "sendCnt", "title": "sendCnt"},
   {"id": "rcvCnt", "title": "rcvCnt"},
   {"id": "start_ts_sec", "title": "start_ts_sec"},
   {"id": "start_ts_usec", "title": "start_ts_usec"},
   {"id": "min_diff", "title": "min_diff"},
   {"id": "max_diff", "title": "max_diff"},
+  {"id": "overall_diff", "title": "frame_latency"},
   {"id": "total_frame_len", "title": "total_frame_len"},
   {"id": "first_src_pckt_nr", "title": "first_src_pckt_nr"},
   {"id": "udpHeader.dest_port", "title": "udpHeader.dest_port"},
@@ -60,9 +61,13 @@ function search_array(src_array) {
 
   // loop through input data
   for (ell of src_array) {
+    // check if rtp timestamp is present
+    if (!ell["rtpHeader.timestamp"] || ell["rtpHeader.timestamp"] == "" ) {
+      continue;
+    }
     let match_found = false;
     let match_set = {
-      "frameCnt": ell["frameCnt"],
+      "rtpTimestamp": ell["rtpHeader.timestamp"],
       "udpHeader.dest_port": ell["udpHeader.dest_port"],
       "udpHeader.src_port": ell["udpHeader.src_port"],
       "protocol": ell["protocol"]
@@ -96,12 +101,14 @@ function search_array(src_array) {
             match_ell.rcv_seq_wrong = true;
           }
           match_ell.latest_rcv_dif_usec = rcv_dif_usec;
-          match_ell.end_ts_sec = ell["source_pcapPacketHeader.ts_sec"];
-          match_ell.end_ts_usec = ell["source_pcapPacketHeader.ts_usec"];
+          match_ell.end_ts_sec = ell["destination_pcapPacketHeader.ts_sec"];
+          match_ell.end_ts_usec = ell["destination_pcapPacketHeader.ts_usec"];
+          match_ell.overall_diff = Math.max(rcv_dif_usec,match_ell.latest_rcv_dif_usec);
           match_ell.rcvCnt++;
         }
         match_ell.sendCnt++;
         match_ell.total_frame_len += Number(ell["pcapPacketHeader.orig_len"]);
+
         break;
       }
     }
@@ -115,11 +122,14 @@ function search_array(src_array) {
                                 ell["destination_pcapPacketHeader.ts_usec"]);
         match_set.min_diff = timeDif;
         match_set.max_diff = timeDif;
+        match_set.overall_diff = timeDif;
         match_set.latest_rcv_dif_usec = time_diff(ell["source_pcapPacketHeader.ts_sec"],
                                                   ell["source_pcapPacketHeader.ts_usec"],
                                                   ell["destination_pcapPacketHeader.ts_sec"],
                                                   ell["destination_pcapPacketHeader.ts_usec"]);
         match_set.rcvCnt = 1;
+        match_set.end_ts_sec = ell["destination_pcapPacketHeader.ts_sec"];
+        match_set.end_ts_usec = ell["destination_pcapPacketHeader.ts_usec"];
       } else {
         // if no destination packet match set diff to zero.
         match_set.latest_rcv_dif_usec = 0;
@@ -129,6 +139,7 @@ function search_array(src_array) {
       match_set.total_frame_len = Number(ell["pcapPacketHeader.orig_len"]);
       match_set.start_ts_sec = ell["source_pcapPacketHeader.ts_sec"];
       match_set.start_ts_usec = ell["source_pcapPacketHeader.ts_usec"];
+      match_set.latest_sequence_num = ell["rtpHeader.sequence_number"];
       match_set.rcv_seq_wrong = false;
       cons_array.push(match_set);
     }
