@@ -5,16 +5,16 @@ to compare two pcap files and match the packets. This way the packet loss and pa
 determined. The function creates several csv-files to which all information is stored.
 
      ----------                          -----------
-    |          |                        |           |
+    |          |     ----> up           |           |
     |  source  | ---------------------> |destination|
-    |   pcap   |                        |   pcap    |
+    |   pcap   |     <---- down         |   pcap    |
      ----------                          -----------
 
 ## recording pcap's
 
 Packets can be captured easily using tcpdump. Consider using the following flags:
 ```
-   tcpdum -i eth0 -n -B 4096 -w dump.pcap
+   tcpdump -i eth0 -n -B 4096 -w dump.pcap
      -B <buffer size>, eg: -B 4096 for a buffer of 4MByte
      -n to not reverse lookup domain names
      -w <filename> to write all data to a file
@@ -35,6 +35,10 @@ After changing the 'config.js' run the program using:
 ```
 node  --max-old-space-size=8192   index.js
 ```
+
+optional command line flags:
+-  -c \<config filename>
+-  -d \<error|info|debug>
 
 ## consolidate frames
 
