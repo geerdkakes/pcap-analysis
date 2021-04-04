@@ -36,6 +36,7 @@ const header_fields = [
   {"id": "udpHeader.dest_port", "title": "udpHeader.dest_port"},
   {"id": "udpHeader.src_port", "title": "udpHeader.src_port"},
   {"id": "protocol", "title": "protocol"},
+  {"id": "markerbit_set", "title": "markerbit_set"},
   {"id": "rcv_seq_wrong", "title": "rcv_seq_wrong"}
 ];
 
@@ -106,6 +107,9 @@ function search_array(src_array) {
           match_ell.overall_diff = Math.max(rcv_dif_usec,match_ell.latest_rcv_dif_usec);
           match_ell.rcvCnt++;
         }
+        if (ell["rtpHeader.marker"] == 1) {
+          match_ell.markerbit_set = true;
+        }
         match_ell.sendCnt++;
         match_ell.total_frame_len += Number(ell["pcapPacketHeader.orig_len"]);
 
@@ -140,6 +144,11 @@ function search_array(src_array) {
       match_set.start_ts_sec = ell["source_pcapPacketHeader.ts_sec"];
       match_set.start_ts_usec = ell["source_pcapPacketHeader.ts_usec"];
       match_set.latest_sequence_num = ell["rtpHeader.sequence_number"];
+      if (ell["rtpHeader.marker"] == 1) {
+        match_set.markerbit_set = true;
+      } else {
+        match_set.markerbit_set = false;
+      }
       match_set.rcv_seq_wrong = false;
       cons_array.push(match_set);
     }
