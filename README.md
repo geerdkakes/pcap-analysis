@@ -6,8 +6,8 @@ determined. The function creates several csv-files to which all information is s
 
      ----------                          -----------
     |          |     ----> up           |           |
-    |  source  | ---------------------> |destination|
-    |   pcap   |     <---- down         |   pcap    |
+    |   pcap   | ---------------------> |    pcap   |
+    |     A    |     <---- down         |      B    |
      ----------                          -----------
 
 ## recording pcap's

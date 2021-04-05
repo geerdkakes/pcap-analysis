@@ -9,12 +9,12 @@ var config ={};
 //
 // pcap file name (input)
 
-config.sourcePcapName = "source.pcap";
-config.destinationPcapName = "destination.pcap";
+config.pcapNameA = "systemA.pcap";
+config.pcapNameB = "systemB.pcap";
 // 
 // csv file names (output)
-config.sourceCsvName = "source.csv"
-config.destinationCsvName = "destinations.csv";
+config.csvNameA = "source.csv"
+config.csvNameB = "destinations.csv";
 config.resultFilename = "matches.csv";
 
 // Note: if you capture packets using tcpdump. Consider using the following flags:
@@ -315,8 +315,8 @@ filterset_remote_car = [
 
 // testrun with source from vehicle and destination for gNodeB
 
-config.sourceFilterset = filterset_remote_car;
-config.destFilterSet = remote_station;
+config.filterSetA = filterset_remote_car;
+config.filterSetB = remote_station;
 
 // export the config object
 module.exports = config;

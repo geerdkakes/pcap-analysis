@@ -120,12 +120,12 @@ function filter_packet(filterSet) {
 
 
 // start reading source pcapfile
-read_pcap(config.sourcePcapName, config.sourceCsvName, logger, filter_packet(config.sourceFilterset), true, multibar,config.decoders)
+read_pcap(config.pcapNameA, config.csvNameA, logger, filter_packet(config.filterSetA), true, multibar,config.decoders)
 .then(function(result){
     sourceArray = result._packets;
     logger.debug("Source list contains " + sourceArray.length + " entries");
     // start reading destination pcapfile
-    return read_pcap(config.destinationPcapName, config.destinationCsvName, logger, filter_packet(config.destFilterSet), true, multibar, config.decoders)
+    return read_pcap(config.pcapNameB, config.csvNameB, logger, filter_packet(config.filterSetB), true, multibar, config.decoders)
 })
 .then(function(result){
     destinationArray = result._packets;
