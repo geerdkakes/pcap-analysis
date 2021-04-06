@@ -39,6 +39,9 @@ var logger = require('./logger')(debuglevel);
 // read config from configfile (javascript format)
 var config = require(configFilename);
 
+// check filenames
+require('./check_filenames')(config, logger);
+
 // check available parameters
 if (typeof config.max_delay === 'undefined' || config.max_delay === null) {
     config.max_delay = 500000;
@@ -50,6 +53,8 @@ if (typeof config.offset === 'undefined' || config.offset === null) {
     config.offset = 0;
 }
 
+// get filter function used to filter out the packets we need to analyse and indicate which are up and down link packets
+filter_packet = require('./filter_packet');
 
 // declare variables destination and source Array. Will be defined using read_pcap function.
 var destinationArray;
@@ -66,58 +71,6 @@ const multibar = new cliProgress.MultiBar({
 
 // new comparePcap object using template-object
 var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar, config.max_delay, config.max_error, config.offset);
-
-// define our own filter function, used by read_pcap function to store only the relevant packets.
-function filter_packet(filterSet) {
-
-    // this function is returned to read_pcap. it expects a packet in the format defined by function Packet() in 'pcapfile.js'
-    return function(packet) {
-        
-        for (items of filterSet) {
-            var result = true;
-            for (item of items) {
-                if (item.type && item.type == "direction") {
-                    // direction is set. Add direction field to packet
-                    packet.direction = item.value;
-                }
-                if (!item.type || item.type == "match") {
-                    switch (item.operator) {
-                        case "eq": 
-                            result = (packet[item.field] == item.value);
-                            break;
-                        case "ne":
-                            result = (packet[item.field] != item.value);
-                            break;
-                        case "gt":
-                            result = (packet[item.field] > item.value);
-                            break;
-                        case "lt":
-                            result = (packet[item.field] < item.value);
-                            break;
-                        case "ge":
-                            result = (packet[item.field] >= item.value);
-                            break;
-                        case "le":
-                            result = (packet[item.field] <= item.value);
-                            break;
-                        case "contains":
-                            result = (packet[item.field].includes(item.value));
-                            break;
-                        default:
-                            // unknown operator
-                            result = false;
-                    }
-                }
-                if (!result) break;
-            }
-            if (result) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
 
 // start reading source pcapfile
 read_pcap(config.pcapNameA, config.csvNameA, logger, filter_packet(config.filterSetA), true, multibar,config.decoders)

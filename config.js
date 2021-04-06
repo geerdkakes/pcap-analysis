@@ -9,12 +9,10 @@ var config ={};
 //
 // pcap file name (input)
 
-config.pcapNameA = "systemA.pcap";
-config.pcapNameB = "systemB.pcap";
-// 
-// csv file names (output)
-config.csvNameA = "source.csv"
-config.csvNameB = "destinations.csv";
+config.inputfileA = "systemA.pcap";
+config.inputfileB = "systemB.pcap";
+
+// csv output file name (output)
 config.resultFilename = "matches.csv";
 
 // Note: if you capture packets using tcpdump. Consider using the following flags:
