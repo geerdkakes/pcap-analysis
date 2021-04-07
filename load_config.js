@@ -27,7 +27,7 @@ function Load_config(configFilename, logger) {
 }
 
 Load_config.prototype.init = function(self) {
-    if (!self) {
+    if (typeof self === "undefined" || self === null) {
         self = this;
     }
     return self.check_filenames(self)
@@ -37,12 +37,12 @@ Load_config.prototype.init = function(self) {
 }
 
 Load_config.prototype.check_filenames = function(self) {
-    if (!self) {
+    if (typeof self === "undefined" || self === null) {
         self = this;
     }
     return new Promise(function(resolve, reject) {
 
-        if (typeof self._configData.input !== "undefined" && self._configDaga.input !== null) {
+        if (typeof self._configData.input !== "undefined" && self._configData.input !== null) {
             // config already present
             self._logger.info("Found input object in configuration with " + self._configDaga.input.length + " elements. Using found object")
             self._input = self._configDaga.input;
@@ -57,50 +57,22 @@ Load_config.prototype.check_filenames = function(self) {
             // check input filename
             if (inputFilename && inputFilename != "") {
                 // found filename config
-                self._input[i] = {};
-                self._input[i]["indexLetter"] = chr;
-                // check extension
-                let fileExtension = get_extension(inputFilename);
-                switch (fileExtension) {
-                    case "pcap":
-                        // found extension pcap. Check if pcapName was specified, if not set it
-                        if (!self._configData["pcapName" + chr])  {
-                            self._input[i].pcapName = inputFilename;
-                        } else {
-                            self._input[i].pcapName = self._configData["pcapName" + chr];
-                        }
-                        // Check if csvpName was specified, if not set it
-                        if (!self._configData["csvName" + chr]) {
-                            self._input[i].csvName = get_basename(inputFilename) + ".csv";
-                        } else {
-                            self._input[i].csvName = self._configData["csvName" + chr];
-                        }
-                        // set input type to pcap
-                        self._input[i].inputType = "pcap";
-                        break;
-                    case "csv":
-                        // check if csvName was specified, if not set it:
-                        if (!self._configData["csvName" + chr]) {
-                            self._input[i].csvName = inputFilename;
-                        } else {
-                            self._input[i].csvName = self._configData["csvName" + chr];
-                        }
-                        // set input type to csv
-                        self._input[i].inputType = "csv";
-                        break;
-                    default:
-                        // unknown extension
-                        self._logger.error("unknown extension \"" + fileExtension + "\"" + " for inputfile: " + self._configData["inputfile" + chr]);
-                        return reject(new Error("Unknown file extension: " + fileExtension));
-                }
+                var input = {};
+                let result = self.parse_filename(inputFilename, input, self._configData["pcapName" + chr], self._configData["csvName" + chr]);
+                if (result) {
+                    // unknown extension
+                    self._logger.error("unknown extension \"" + get_extension(inputFilename) + "\"" + " for inputfile: " + self._configData["inputfile" + chr]);
+                    return reject(new Error("Unknown file extension: " + get_extension(inputFilename)));
+                } 
+                input["indexLetter"] = chr;
+
                 // load filterSet
-                let currentFilterset = self._configData["filter_set" + chr];
-                if (typeof currentFilterset !== "undefined" && currentFilterset !== null) {
-                    self._input[i].filterSet = currentFilterset
-                } else {
-                    self._logger.error("No filterset + \"" + "filter_set" + chr + "\" present for \"" + inputFilename + "\"");
+                result = self.load_filterset(input, self._configData["filter_set" + chr]);
+                if (result) {
+                    self._logger.error("No filterset \"" + "filter_set" + chr + "\" present for \"" + inputFilename + "\"");
                     return reject(new Error("Missing filterset for input file: " + inputFilename));
                 }
+                self._input[i] = input;
                 i++;
             } else {
                 // no filename found for this letter
@@ -109,6 +81,65 @@ Load_config.prototype.check_filenames = function(self) {
         }
         resolve(self);
     });
+}
+
+Load_config.prototype.parse_filename = function(inputFilename, input, pcapName, csvName) {
+
+    var self = this;
+
+    // check extension
+    let fileExtension = get_extension(inputFilename);
+    if (!input) {
+        input = {};
+    }
+    switch (fileExtension) {
+        case "pcap":
+            // found extension pcap. Check if pcapName was specified, if not set it
+            if (!pcapName)  {
+                input.pcapName = inputFilename;
+            } else {
+                input.pcapName = pcapName;
+            }
+            // Check if csvpName was specified, if not set it
+            if (!csvName) {
+                input.csvName = get_basename(inputFilename) + ".csv";
+            } else {
+                input.csvName = csvName;
+            }
+            // set input type to pcap
+                input.inputType = "pcap";
+            break;
+        case "csv":
+            // check if csvName was specified, if not set it:
+            if (!csvName) {
+                input.csvName = inputFilename;
+            } else {
+                input.csvName = csvName;
+            }
+            // set input type to csv
+                input.inputType = "csv";
+            break;
+        default:
+            return 1;
+
+    }
+    return 0;
+}
+
+Load_config.prototype.load_filterset = function(input, currentFilterset){
+    var self = this;
+    if (typeof currentFilterset !== "undefined" && currentFilterset !== null) {
+        input.filterSet = currentFilterset
+        return 0;
+    } else {
+        // check if default / generic filterset is defined
+        if (typeof self._configData["filter_set"] !== "undefined" && self._configData["filter_set"] !== null) {
+            input.filterSet = self._configData["filter_set"]
+            return 0;
+        } else {
+            return 1;
+        }
+    }
 }
 
 Load_config.prototype.check_parameters = function(self){
@@ -150,7 +181,7 @@ Load_config.prototype.check_parameters = function(self){
 
 
 Load_config.prototype.pop_inputfile = function(self) {
-    if (!self) {
+    if (typeof self === "undefined" || self === null) {
         self = this;
     }
     if (self._input.length > 0) {
