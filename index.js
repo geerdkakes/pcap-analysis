@@ -81,7 +81,10 @@ if (inputfile) {
     }
     configuration.check_parameters()
     .then(function(result) {
-        return parse_data_file(input, configuration);
+        return parse_data_file(input, configuration)
+                .then(function(result) {
+                    process.exit(0);
+                })
     })
 } else {
     // start by checking filenames in main config
