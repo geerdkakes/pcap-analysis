@@ -313,8 +313,8 @@ filterset_remote_car = [
 
 // testrun with source from vehicle and destination for gNodeB
 
-config.filterSetA = filterset_remote_car;
-config.filterSetB = remote_station;
+config.filter_setA = filterset_remote_car;
+config.filter_setB = remote_station;
 
 // export the config object
 module.exports = config;

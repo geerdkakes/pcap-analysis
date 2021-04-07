@@ -19,12 +19,16 @@
 //
 
 
-// main libraries to use
+//  libraries to use
 const args = require('minimist')(process.argv.slice(2));
 const cliProgress = require('cli-progress');
 
 // load function to read pcap files
 var read_pcap = require('./read_pcap');
+
+// load function to read csv files
+var read_csv = require('./read_csv');
+
 
 // load object-template to compare pcap files
 var ComparePcap = require('./compare_pcap');
@@ -36,31 +40,24 @@ const debuglevel = (typeof args.d === 'undefined' || args.d === null) ? "error" 
 // set debugger with debuglevel from commandline, default is error
 var logger = require('./logger')(debuglevel);
 
-// read config from configfile (javascript format)
-var config = require(configFilename);
 
-// check filenames
-require('./check_filenames')(config, logger);
 
-// check available parameters
-if (typeof config.max_delay === 'undefined' || config.max_delay === null) {
-    config.max_delay = 500000;
-}
-if (typeof config.max_error === 'undefined' || config.max_error === null) {
-    config.max_error = 500000;
-}
-if (typeof config.offset === 'undefined' || config.offset === null) {
-    config.offset = 0;
-}
+// load helper functions
+var Load_config =  require('./load_config')
+
+var configuration = new Load_config(configFilename, logger);
+
+
 
 // get filter function used to filter out the packets we need to analyse and indicate which are up and down link packets
 filter_packet = require('./filter_packet');
 
 // declare variables destination and source Array. Will be defined using read_pcap function.
-var destinationArray;
-var sourceArray;
+var pcapDataArrayA;
+var pcapDataArrayB;
 var upMatches;
 var downMatches;
+var comparePcap
 
 // progress bar - only working when using command line
 const multibar = new cliProgress.MultiBar({
@@ -69,26 +66,53 @@ const multibar = new cliProgress.MultiBar({
  
 }, cliProgress.Presets.shades_grey);
 
-// new comparePcap object using template-object
-var comparePcap = new ComparePcap(config.match_array, logger, config.resultFilename, config.header_fields, multibar, config.max_delay, config.max_error, config.offset);
 
-// start reading source pcapfile
-read_pcap(config.pcapNameA, config.csvNameA, logger, filter_packet(config.filterSetA), true, multibar,config.decoders)
+
+function itterate_input_files(config) {
+    var input_file = config.pop_inputfile(config);
+    if (input_file) {
+        switch(input_file.inputType) {
+            case "pcap":
+                return read_pcap(input_file.pcapName, input_file.csvName, logger, filter_packet(input_file.filterSet), true, multibar,config._decoders)
+                       .then(function(result){
+                            config._logger.debug("read pcap file: " + input_file.pcapName + " and found " + result._packets.length + " elements");
+                            config.push_pcap_packet_array(result._packets);
+                            return itterate_input_files(config);
+                       })
+
+                break;
+            case "csv":
+                return read_csv(input_file.csvName)
+                       .then(function(result){
+                            config._logger.debug("read csv file: " + input_file.csvName + " and found " + result.length + " elements");
+                            config.push_pcap_packet_array(result);
+                            return itterate_input_files(config);
+                       });
+        }
+    } else {
+        // all files loaded return
+        return config;
+    }
+}
+
+
+// start by checking filenames
+configuration.init()
 .then(function(result){
-    sourceArray = result._packets;
-    logger.debug("Source list contains " + sourceArray.length + " entries");
-    // start reading destination pcapfile
-    return read_pcap(config.pcapNameB, config.csvNameB, logger, filter_packet(config.filterSetB), true, multibar, config.decoders)
+    return itterate_input_files(configuration);
 })
 .then(function(result){
-    destinationArray = result._packets;
-    logger.debug("Destination list contains " + destinationArray.length + " entries");
-    return comparePcap.comparePcapArrays(sourceArray, destinationArray, "up");
+    pcapDataArrayA = result.pop_pcap_packet_array();
+    pcapDataArrayB = result.pop_pcap_packet_array();
+    // new comparePcap object using template-object
+    comparePcap = new ComparePcap(result._matchArray, logger, result._resultFileName, result._headerFields, multibar, result._maxDelay, result._maxError, result._offset);
+
+    return comparePcap.comparePcapArrays(pcapDataArrayA, pcapDataArrayB, "up");
 })
 .then(function(result){
     logger.debug("Found " + result.length + " matches in up direction");
     upMatches = result;
-    return comparePcap.comparePcapArrays(sourceArray, destinationArray, "down");
+    return comparePcap.comparePcapArrays(pcapDataArrayA, pcapDataArrayB, "down");
 })
 .then(function(result){
     logger.debug("Found " + result.length + " matches in down direction");

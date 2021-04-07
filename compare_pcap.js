@@ -140,6 +140,8 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
             if (!startIndex) {
                 self._logger.error("comparePcapArrays: no timestamps found that match");
                 reject(new Error("comparePcapArray->findStartIndex: no timestamps found that match"));
+            } else {
+                self._logger.debug("Starting comparing at position: (" + startIndex.sourceIndex +"," + startIndex.destIndex + ")" );
             }
             var nrOfMatches = 0;
             var nrOfLosts = 0;
@@ -173,7 +175,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                                             <  sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"]  ) {
                         // start at least with searching at the same second
                         startIndex.destIndex = i;
-                    } else {
+                    } else {  
                         if (destinationPacket["pcapPacketHeader.ts_sec"]*1000000 + destinationPacket["pcapPacketHeader.ts_usec"] - self._offset
                             > sourcePacket["pcapPacketHeader.ts_sec"]*1000000 + sourcePacket["pcapPacketHeader.ts_usec"] + self._max_delay) {
                             // more than max_delay usecond difference, give up
@@ -210,7 +212,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                         }
                         sourcePacket.found = true;
                         break;
-                    }
+                    } 
                 }
                 if (!sourcePacket.found && nrOfMatches>0) {
                         // we lost this packet
