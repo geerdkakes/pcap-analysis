@@ -12,8 +12,15 @@ var PcapFile = require('./pcapfile');
 // get header fields defining which fields are stored in a csv file
 var header_fields = require('./header_fields');
 
+// get fs lib
+const fs = require('fs')
+
+
+
 // get createCsvWriter used to store data in a csv file
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+// const { time } = require('node:console');
+// const { times } = require('async');
 
 // Determine if we want to keep all data in memory. Needed when we want to
 // compare the results. 
@@ -235,27 +242,120 @@ function itteratePackets(pcapdata) {
             if (result._packets.length % 5000 && result._progressBar) {
                 result._progressBar.update(Math.floor(result._bytes_read/1048576));
             }
-            // write every 1000 packets to file
-            if ( result._packets.length % write_to_csv == 0) {
-                return result._csvWriter.writeRecords(result._packets.slice((keep_buffer)?result._packetsWritenToCSV:0))
-                            .then(() => {
-                                return new Promise(function(resolve, reject) {
-                                    result._packetsWritenToCSV += write_to_csv;
-                                    // check if we need to keep the buffer and reset if not
-                                    if (!keep_buffer) {
-                                        result._packets.length = 0;
-                                    }
-                                    resolve(result);
-                                });
-                            })
-                            .then(() => {return itteratePackets(result)});
-            } else return itteratePackets(result);
+            return write_csv_output(result, false)
+            .then(() => {return itteratePackets(result)});
         } else {
             result._logger.info("last packet read");
             return result;
         }
     });
 }
+// function to write csv output
+//
+// this function takes:
+//   pcapfileobj: obj created with pcapfile class 
+//   lastcall:     true if the remaing bytes need to be writen, false otherwise
+//
+//    the dynamic filename contains: <yyyy>.<mm>.<dd>_<h>.<m>.<s>-<h>.<m>.<s>_<basename>.csv
+//    If the static filename is defined, this is used and copied as is.
+function write_csv_output(pcapfileobj, lastcall) {
+
+return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
+    fileobject = pcapfileobj._fileobject;
+
+        if (typeof fileobject.staticfilename !== 'undefined' && fileobject.staticfilename !== null) {
+            // static file name present. We should only write out to this file.
+            if (typeof fileobject.csvWriter === 'undefined' || fileobject.csvWriter === null) {
+                fileobject.csvWriter = createCsvWriter({
+                                            path: fileobject.staticfilename,
+                                            header: header_fields
+                                        });
+            }
+            if ( pcapfileobj._packets.length % fileobject.staticPctBufLen == 0 || lastcall) {
+                
+                fileobject.csvWriter.writeRecords(pcapfileobj._packets.slice((keep_buffer)?fileobject.currentPctWriten:0))
+                .then(() => {
+                        
+                    // check if we need to keep the buffer and reset if not
+                    if (!keep_buffer) {
+                        fileobject.currentPctWriten += pcapfileobj._packets.length;
+                        pcapfileobj._packets.length = 0;
+                    } else {
+                        fileobject.currentPctWriten = pcapfileobj._packets.length;
+                    }
+                    return resolve_write_csv_output(pcapfileobj);
+
+                 });
+            }
+        } else {
+
+
+            var timestamp = pcapfileobj._currentPacket.pcapPacketHeader.ts_sec
+            var writeout = lastcall;
+            // check if we went past our upperlimit
+            if (typeof fileobject.windowCurrentUpper === 'undefined' || 
+                            fileobject.windowCurrentUpper === null || 
+                            timestamp >= fileobject.windowCurrentUpper) {
+
+                // check if lower stimestring is defined, if nog define it using current timestamp
+                if (typeof fileobject.lowerTimeString === 'undefined' || fileobject.lowerTimeString === null) {
+                    let dStart = new Date(timestamp*1000);
+                    fileobject.lowerTimeString = dStart.getHours() + '.' + dStart.getMinutes() + '.' + dStart.getSeconds();
+                    fileobject.windowCurrentLower = timestamp;
+                } else{
+                    fileobject.lowerTimeString = fileobject.upperTimeString
+                    fileobject.windowCurrentLower = fileobject.windowCurrentUpper;
+                    writeout = true;
+                }
+                fileobject.windowCurrentUpper = (Math.floor(timestamp/fileobject.windowlength) +1)*fileobject.windowlength;
+                let dUpper = new Date(fileobject.windowCurrentUpper*1000);
+
+                fileobject.dateString = dUpper.getFullYear() + '.' + dUpper.getMonth() + '.' + dUpper.getDay();
+                fileobject.upperTimeString = dUpper.getHours() + '.' + dUpper.getMinutes() + '.' + dUpper.getSeconds()
+
+
+                //open new file
+                fileobject.dynamicCurrentFileName = fileobject.basepath + fileobject.dateString + '_' + fileobject.lowerTimeString + '-' + 
+                                                    fileobject.upperTimeString + '_' + fileobject.basename + '.csv';
+
+                // check if file exists
+                if (fs.existsSync(fileobject.dynamicCurrentFileName)) {
+                    // append to existing file
+                    fileobject.csvWriter = createCsvWriter({
+                            path: fileobject.dynamicCurrentFileName,
+                            header: header_fields,
+                            append: true
+                    });
+                } else {
+                    // create new file
+                    fileobject.csvWriter = createCsvWriter({
+                                path: fileobject.dynamicCurrentFileName,
+                                header: header_fields,
+                        });
+                }
+
+            }
+            if (writeout){
+
+                fileobject.csvWriter.writeRecords(pcapfileobj._packets.slice((keep_buffer)?fileobject.currentPctWriten:0))
+                .then(() => {
+
+                    fileobject.currentPctWriten += fileobject.staticPctBufLen;
+                    // check if we need to keep the buffer and reset if not
+                    if (!keep_buffer) {
+                        fileobject.currentPctWriten += pcapfileobj._packets.length
+                        pcapfileobj._packets.length = 0;
+                    } else {
+                        fileobject.currentPctWriten = pcapfileobj._packets.length;
+                    }
+                    return resolve_write_csv_output(pcapfileobj);
+                });
+            }
+        }
+        return resolve_write_csv_output(pcapfileobj);
+    });
+}
+
 // main function 'read_pcap' used to read a pcapfile
 //
 // this function takes:
@@ -275,7 +375,7 @@ function itteratePackets(pcapdata) {
 //
 // this function is called from 'index.js' to read different pcapfiles and than to compare the result.
 // this function returns a promise
-function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders) {
+function read_pcap(inputfile, fileobject, logger, filter, keep_in_memory, multibar, decoders) {
     return new Promise(function(resolve_readpcap, reject_readpcap) {
         (function(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders){
             var pcap1 = new PcapFile(inputfile, logger, filter, decoders);
@@ -284,10 +384,7 @@ function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar,
                 keep_buffer = true;
             }
 
-            pcap1._csvWriter = createCsvWriter({
-                path: csvfile,
-                header: header_fields
-            });
+            pcap1._fileobject = fileobject;
             pcap1.initFile()
             .then(function(result){
                 if (multibar) {
@@ -302,10 +399,9 @@ function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar,
                 return itteratePackets(result);
             })
             .then(function(result){
-                return result._csvWriter.writeRecords(result._packets)       // returns a promise
+                return write_csv_output(result)       // returns a promise
             })
             .then(() => {
-                pcap1._packetsWritenToCSV += pcap1._packets.length % write_to_csv
                 logger.info('...Done');
                 resolve_readpcap(pcap1);
             })
@@ -313,7 +409,7 @@ function read_pcap(inputfile, csvfile, logger, filter, keep_in_memory, multibar,
                 reject_readpcap(result);
                 return logger.error("err at packet: " + result._packetCnt + " with message: " + result);
             });
-        })(inputfile, csvfile, logger, filter, keep_in_memory, multibar, decoders)
+        })(inputfile, fileobject, logger, filter, keep_in_memory, multibar, decoders)
     });
 }
 

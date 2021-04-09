@@ -33,20 +33,18 @@ var read_csv = require('./read_csv');
 // load object-template to compare pcap files
 var ComparePcap = require('./compare_pcap');
 
-// read commandline flags
-const configFilename = (typeof args.c === 'undefined' || args.c === null) ? "./config" : args.c;
-const debuglevel = (typeof args.d === 'undefined' || args.d === null) ? "error" : args.d;
-const inputfile = (typeof args.i === 'undefined' || args.i === null) ? null : args.i;
+
 
 // set debugger with debuglevel from commandline, default is error
+const debuglevel = (typeof args.d === 'undefined' || args.d === null) ? "error" : args.d;
 var logger = require('./logger')(debuglevel);
 
 
 
 // load helper functions
 var Load_config =  require('./load_config')
-
-var configuration = new Load_config(configFilename, logger);
+const configFilename = (typeof args.c === 'undefined' || args.c === null) ? "./config" : args.c;
+var configuration = new Load_config(configFilename, logger, args);
 
 
 
@@ -69,18 +67,34 @@ const multibar = new cliProgress.MultiBar({
 
 
 // if input file given on commandline we only process this file:
-if (inputfile) {
+if (configuration._singleInput) {
     var input = {};
-    if (configuration.parse_filename(inputfile, input)) {
-        logger.error("Error using input file: " + inputfile);
-        process.exit(1);
-    }
-    if (configuration.load_filterset(input)) {
-        logger.error("Error retrieving default filterset 'config.filter_set' from configuration: " + configFilename);
-        process.exit(1);
-    }
-    configuration.check_parameters()
+
+
+    return new Promise(function(resolve, reject) {
+        if (configuration.parse_filename(configuration._singleFileInput, input)) {
+            let msg = "Error using input file: " + inputfile;
+            logger.error(msg);
+            reject(new Error(msg));
+        }
+        if (configuration.load_filterset(input)) {
+            let msg = "Error retrieving default filterset 'config.filter_set' from configuration: " + configFilename
+            logger.error(msg);
+            reject(new Error(msg));
+        }
+        resolve(configuration)
+    })
     .then(function(result) {
+        fileObject = {}
+        if (configuration._slicedOutput) {
+            fileObject.basename = configuration._baseName;
+            fileObject.basepath = input.csvName.match(/^(.+)\/([^\/]+)$/i)[1].concat('/');
+            fileObject.windowlength = configuration._windowlength
+        } else {
+            fileObject.staticPctBufLen = configuration._staticPctBufLen;
+            fileObject.staticfilename = input.csvName;
+        }
+        input.fileObject = fileObject;
         return parse_data_file(input, configuration)
                 .then(function(result) {
                     process.exit(0);
@@ -127,6 +141,11 @@ if (inputfile) {
 function itterate_input_files(config) {
     var input_file = config.pop_inputfile(config);
     if (input_file) {
+        fileObject ={}
+        fileObject.staticPctBufLen = configuration._staticPctBufLen;
+        fileObject.staticfilename = input_file.csvName;
+        input_file.fileObject = fileObject;
+        // currently only static file names allowed. For future work also enable slicing of files in small parts.
         return parse_data_file(input_file, config)
                 .then(function(result){
                     config._logger.debug("read pcap data file: ");
@@ -143,7 +162,8 @@ function itterate_input_files(config) {
 function parse_data_file(input_file, config) {
     switch(input_file.inputType) {
         case "pcap":
-            return read_pcap(input_file.pcapName, input_file.csvName, logger, filter_packet(input_file.filterSet), true, multibar,config._decoders)
+            // add code to populate fileobject (to replace csvName)
+            return read_pcap(input_file.pcapName, input_file.fileObject, logger, filter_packet(input_file.filterSet), true, multibar,config._decoders)
             .then(function(result) {
                 return result._packets
             })

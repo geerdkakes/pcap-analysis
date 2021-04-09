@@ -83,10 +83,14 @@ After the pcap analysis program has run you can consolidate the output per frame
 node --max-old-space-size=8192 consolidate_frames.js -i analysed_input.csv -o consolidated_output.csv
 ```
 
-## other uses
+## sliced output
 
-You can also use `read_pcap.js` to convert a pcap file to a csv format. For now you need to write your own code to do this.
-Use `index.js` as an example.
+Using command line flags you can instruct to only write out csv files. There is an option to write out to multiple csv files, splitting up the pcap file in different files with the same duration in time. To instruct to only convert to a csv file use the `-i` flag:
+- -i <filename> where filename is the input pcap filename
+- -s <false|true> to specify a sliced output
+- -b <basename> the basename contained in the output csv (together with a date and time stamp)
+
+In the configuration file you can also specify the duration in time that should be contained in an output csv file.
 
 ## changes
 
@@ -94,6 +98,7 @@ Use `index.js` as an example.
 - 5-3-2021: added extra offset parameters to help the search when both pcaps are no aligned correctly in time.
 - 4-4-2021: added decoder for rtp packets. Now the rtp timestamp is used to recognise which packets belong to a frame.
 - 5-4-2021: added `direction` to packets. From source to destination is `up` and the other way around `down`
+- 10-4-2021: possibility to only covert to csv files using a commandline flag. Also the input variables to specify the input filename in the configuration file is changed (see config for an example)
 
 ## Contribute
 

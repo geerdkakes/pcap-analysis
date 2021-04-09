@@ -6,7 +6,7 @@ function get_extension(filename) {
     return filename.match(/[^.][0-9a-z]+$/i)[0].toLowerCase();
 }
 
-function Load_config(configFilename, logger) {
+function Load_config(configFilename, logger, args) {
 
     this._logger = logger;
     this._configFilename = configFilename;
@@ -19,11 +19,18 @@ function Load_config(configFilename, logger) {
     this._matchArray = [];
     this._resultFileName = "";
     this._headerFields = [];
+    this._singleInputFile = null;
+    this._baseName = "";
+    this._args = args;
+    this._singleInput = (typeof args.i === "undefined" || args.i === null)? false: true;
+    this._windowlength = 0;
+    this._staticPctBufLen = 1000;
+    this._singleFileInput = null;
 
     // read config from configfile (javascript format)
     this._configData = require(configFilename);
 
-
+    this.check_parameters();
 }
 
 Load_config.prototype.init = function(self) {
@@ -31,9 +38,6 @@ Load_config.prototype.init = function(self) {
         self = this;
     }
     return self.check_filenames(self)
-           .then(function(result){
-               return result.check_parameters(result);ß
-            });
 }
 
 Load_config.prototype.check_filenames = function(self) {
@@ -146,37 +150,75 @@ Load_config.prototype.check_parameters = function(self){
     if (!self) {
         self = this;
     }
-    return new Promise(function(resolve, reject) {
-        // check available parameters
-        if (typeof self._configData.max_delay !== 'undefined' && self._configData.max_delay !== null) {
-            self._maxDelay = self._configData.max_delay;
-        }
-        if (typeof self._configData.max_error !== 'undefined' && self._configData.max_error !== null) {
-            self._maxError = self._configData.max_error;
-        }
-        if (typeof self._configData.offset !== 'undefined' && self._configData.offset !== null) {
-            self._offset = self._configData.offset;
-        }
-        if (typeof self._configData.decoders !== 'undefined' && self._configData.decoders !== null) {
-            self._decoders = self._configData.decoders;
-        }
-        if (typeof self._configData.match_array !== 'undefined' && self._configData.match_array !== null) {
-            self._matchArray = self._configData.match_array;
+
+    // check available parameters
+    if (typeof self._args.i !== 'undefined' && self._args.i !== null) {
+        self._singleFileInput = self._args.i;
+    }
+    if (typeof self._configData.max_delay !== 'undefined' && self._configData.max_delay !== null) {
+        self._maxDelay = self._configData.max_delay;
+    }
+    if (typeof self._configData.max_error !== 'undefined' && self._configData.max_error !== null) {
+        self._maxError = self._configData.max_error;
+    }
+    if (typeof self._configData.offset !== 'undefined' && self._configData.offset !== null) {
+        self._offset = self._configData.offset;
+    }
+    if (typeof self._configData.decoders !== 'undefined' && self._configData.decoders !== null) {
+        self._decoders = self._configData.decoders;
+    }
+    if (typeof self._configData.match_array !== 'undefined' && self._configData.match_array !== null) {
+        self._matchArray = self._configData.match_array;
+    } else {
+        self._logger.info("Missing match array");
+    }
+    if (typeof self._configData.resultFilename !== 'undefined' && self._configData.resultFilename !== null) {
+        self._resultFileName = self._configData.resultFilename;
+    } else {
+        self._logger.info("Missing result file name");
+    }
+    if (typeof self._configData.header_fields !== 'undefined' && self._configData.header_fields !== null) {
+        self._headerFields = self._configData.header_fields;
+    } else {
+        self._logger.info("Missing header fields to export results");
+    }
+    if (typeof self._args.b !== 'undefined' && self._args.b !== null) {
+        self._baseName = self._args.b
+    } else {
+        if (typeof self._configData.basename !== 'undefined' && self._configData.basename !== null) {
+            self._baseName = self._configData.basename;
         } else {
-            self._logger.info("Missing match array");
+            self._baseName = "";
         }
-        if (typeof self._configData.resultFilename !== 'undefined' && self._configData.resultFilename !== null) {
-            self._resultFileName = self._configData.resultFilename;
+    }
+    if (typeof self._args.s !== 'undefined' && self._args.s !== null) {
+        self._slicedOutput = self._args.s
+    } else {
+        if (typeof self._configData.sliced_output !== 'undefined' && self._configData.sliced_output !== null) {
+            self._slicedOutput = self._configData.sliced_output;
         } else {
-            self._logger.info("Missing result file name");
+            self._slicedOutput = false;
         }
-        if (typeof self._configData.header_fields !== 'undefined' && self._configData.header_fields !== null) {
-            self._headerFields = self._configData.header_fields;
-        } else {
-            self._logger.info("Missing header fields to export results");
+    }
+
+    if (typeof self._configData.window_length !== 'undefined' && self._configData.window_length !== null) {
+        self._windowlength = self._configData.window_length;
+    } else {
+        self._windowlength = 300; // 5 minnutes
+    }
+    if (typeof self._configData.static_pct_buf_len !== 'undefined' && self._configData.static_pct_buf_len !== null) {
+        self._staticPctBufLen = self._configData.static_pct_buf_len;
+    } else {
+        self._staticPctBufLen = 1000;
+    }
+
+    
+    // singleInputFile only parsed from commandline. treated as base name when slicedOutput is defined else as full file name (static)
+    if (!self._slicedOutput) {
+        if (self._singleFileInput) {
+            self._singleInputFile = self._singleFileInput;
         }
-        resolve(self);
-    });
+    } 
 }
 
 

@@ -39,6 +39,19 @@ config.max_error = 500000; // 0,5 seconds
 // offset to use if source and destination are not in sync
 config.offset = 0;
 
+// -----------------------------------------------------------------------
+// Variables for a slices output. This converts a pcap input file into multiple csv output files.
+// In the filename the date, starttime, endtime and basename is specified
+//
+// window length in seconds, used in combination with command line flag -i to specify single input pcap file
+config.window_length = 300;  // write out a new file every 5 minutes
+
+// write in parts, only when command line flag -i is used to specify single input pcap file
+config.sliced_output = true;
+
+// basename, used to specify part of the filename that is used with a sliced output.
+config.basename = "testbasename"
+
 // decoding combination
 config.decoders = [
         {

@@ -82,9 +82,8 @@ function PcapFile(fileName, logger, filter, decoders) {
       this._logger = logger;
       this._ptrBufferCurrentPacket = 0;
       this._lenBufferCurrentPacket = 0;
-      this._csvWriter;
+      this._fileobject;
       this._progressBar;
-      this._packetsWritenToCSV = 0;
       this._frameTracker = [];
       this._decoders = decoders;
     }
