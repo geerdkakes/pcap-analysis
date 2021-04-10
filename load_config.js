@@ -212,6 +212,15 @@ Load_config.prototype.check_parameters = function(self){
         self._staticPctBufLen = 1000;
     }
 
+    if (typeof self._args.compare !== 'undefined' && self._args.compare !== null) {
+        var filesToCompare = self._args.compare.split(",");
+        
+        for (let i = 0; i < filesToCompare.length; i++) {
+            // itterate of letters starting with A
+            var chr = String.fromCharCode(65 + i);
+            self._configData["inputfile" + chr] = filesToCompare[i];
+        }
+    }
     
     // singleInputFile only parsed from commandline. treated as base name when slicedOutput is defined else as full file name (static)
     if (!self._slicedOutput) {

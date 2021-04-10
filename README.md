@@ -39,6 +39,12 @@ node  --max-old-space-size=8192   index.js
 optional command line flags:
 -  -c \<config filename>
 -  -d \<error|info|debug>
+-  -i <filename to convert to csv>
+- --compare=<filename1>,<fielaname2>
+
+Using the `-i` flag a pcap file is only converted to a csv format. During the conversion, header fieds are decoded (like tcp, ip, udp, rtp, etc.) and the payload is converted to a checksum for future comparison. With the `--compare` flag multiple files can be specified for comparison. This to be able to script the conversion and comparison of the different pcap files.
+
+Filenames specified via the command line take precedence over the files specified in the configuration file.
 
 ## consolidate frames
 
@@ -99,6 +105,10 @@ In the configuration file you can also specify the duration in time that should 
 - 4-4-2021: added decoder for rtp packets. Now the rtp timestamp is used to recognise which packets belong to a frame.
 - 5-4-2021: added `direction` to packets. From source to destination is `up` and the other way around `down`
 - 10-4-2021: possibility to only covert to csv files using a commandline flag. Also the input variables to specify the input filename in the configuration file is changed (see config for an example)
+
+## To do
+- improve the progress bar (e.g. display eta, work while reading csv and enable in between updates while comparing packets)
+- enable comparison of more than two probes. Currently only two probes are allowed
 
 ## Contribute
 
