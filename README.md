@@ -40,6 +40,7 @@ optional command line flags:
 -  -c \<config filename>
 -  -d \<error|info|debug>
 -  -i <filename to convert to csv>
+-  -r <result filename>
 - --compare=<filename1>,<fielaname2>
 
 Using the `-i` flag a pcap file is only converted to a csv format. During the conversion, header fieds are decoded (like tcp, ip, udp, rtp, etc.) and the payload is converted to a checksum for future comparison. With the `--compare` flag multiple files can be specified for comparison. This to be able to script the conversion and comparison of the different pcap files.

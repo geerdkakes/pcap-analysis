@@ -172,10 +172,14 @@ Load_config.prototype.check_parameters = function(self){
     } else {
         self._logger.info("Missing match array");
     }
-    if (typeof self._configData.resultFilename !== 'undefined' && self._configData.resultFilename !== null) {
-        self._resultFileName = self._configData.resultFilename;
+    if (typeof self._args.r !== 'undefined' && self._args.r !== null) {
+        self._resultFileName = self._args.r;
     } else {
-        self._logger.info("Missing result file name");
+        if (typeof self._configData.resultFilename !== 'undefined' && self._configData.resultFilename !== null) {
+            self._resultFileName = self._configData.resultFilename;
+        } else {
+            self._logger.info("Missing result file name");
+        }
     }
     if (typeof self._configData.header_fields !== 'undefined' && self._configData.header_fields !== null) {
         self._headerFields = self._configData.header_fields;
