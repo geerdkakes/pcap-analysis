@@ -310,7 +310,7 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
                 fileobject.windowCurrentUpper = (Math.floor(timestamp/fileobject.windowlength) +1)*fileobject.windowlength;
                 let dUpper = new Date(fileobject.windowCurrentUpper*1000);
 
-                fileobject.dateString = dUpper.getFullYear() + '.' + dUpper.getMonth() + '.' + dUpper.getDay();
+                fileobject.dateString = dUpper.getFullYear() + '.' + (dUpper.getMonth()+1) + '.' + dUpper.getDate();
                 fileobject.upperTimeString = dUpper.getHours() + '.' + dUpper.getMinutes() + '.' + dUpper.getSeconds()
 
 
