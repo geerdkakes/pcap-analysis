@@ -110,6 +110,7 @@ In the configuration file you can also specify the duration in time that should 
 ## To do
 - improve the progress bar (e.g. display eta, work while reading csv and enable in between updates while comparing packets)
 - enable comparison of more than two probes. Currently only two probes are allowed
+- correct time using chrony output. For each source optionally a "statistics.log" file can be specified + the reference to be used (e.g. PPS). The time is than corrected using the `Est offset` field. This field is in seconds, a positive value means the time in the PCAP is estimated to be fast.
 
 ## Contribute
 
