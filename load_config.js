@@ -196,7 +196,9 @@ Load_config.prototype.check_parameters = function(self){
         }
     }
     if (typeof self._args.s !== 'undefined' && self._args.s !== null) {
-        self._slicedOutput = self._args.s
+        if (self._args.s === 'true' || self._args.s === 'True' || self._args.s === 'TRUE') {
+           self._slicedOutput = true
+        }
     } else {
         if (typeof self._configData.sliced_output !== 'undefined' && self._configData.sliced_output !== null) {
             self._slicedOutput = self._configData.sliced_output;
