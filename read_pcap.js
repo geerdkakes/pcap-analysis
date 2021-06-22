@@ -263,6 +263,9 @@ function write_csv_output(pcapfileobj, lastcall) {
 return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
     fileobject = pcapfileobj._fileobject;
 
+    if (typeof fileobject.currentPctWriten === 'undefined' || fileobject.currentPctWriten === null) {
+        fileobject.currentPctWriten = 0;
+    }
         if (typeof fileobject.staticfilename !== 'undefined' && fileobject.staticfilename !== null) {
             // static file name present. We should only write out to this file.
             if (typeof fileobject.csvWriter === 'undefined' || fileobject.csvWriter === null) {
@@ -286,6 +289,8 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
                     return resolve_write_csv_output(pcapfileobj);
 
                  });
+            } else {
+                return resolve_write_csv_output(pcapfileobj);
             }
         } else {
 
@@ -350,9 +355,11 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
                     }
                     return resolve_write_csv_output(pcapfileobj);
                 });
+            } else {
+                return resolve_write_csv_output(pcapfileobj);
             }
         }
-        return resolve_write_csv_output(pcapfileobj);
+        
     });
 }
 
@@ -399,7 +406,7 @@ function read_pcap(inputfile, fileobject, logger, filter, keep_in_memory, multib
                 return itteratePackets(result);
             })
             .then(function(result){
-                return write_csv_output(result)       // returns a promise
+                return write_csv_output(result, true)       // returns a promise
             })
             .then(() => {
                 logger.info('...Done');
