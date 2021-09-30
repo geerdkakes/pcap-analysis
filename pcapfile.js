@@ -176,18 +176,37 @@ PcapFile.prototype.initFile = function(){
                 }
                 self._logger.info("read",num,"bytes");
                 self.updateBytesRead(self,num);
-
-                // determine big indian or litle indian by reading magic string
-                if ( self._buffer.toString('hex', 0, 4) === 'd4c3b2a1' ) {
-                    self._endian = 'litle';
-                    Buffer.prototype.readUInt = Buffer.prototype.readUIntLE;
-                    Buffer.prototype.readInt = Buffer.prototype.readIntLE;
-                    self._logger.debug('litle endian file format');
-                } else {
-                    self._endian = 'big';
-                    Buffer.prototype.readUInt = Buffer.prototype.readUIntBE;
-                    Buffer.prototype.readInt = Buffer.prototype.readIntBE;
-                    self._logger.debug('big endian file format');
+                let magicnr_str = self._buffer.toString('hex', 0, 4);
+                switch (magicnr_str) {
+                    case "d4c3b2a1":
+                        // Litle Endian, logging in seconds and microseconds
+                        self._endian = 'litle';
+                        Buffer.prototype.readUInt = Buffer.prototype.readUIntLE;
+                        Buffer.prototype.readInt = Buffer.prototype.readIntLE;
+                        self._logger.debug('litle endian file format, logging in seconds and microseconds, magic nr: a1b2c3d4');
+                        break;
+                    case "4dc3b2a1":
+                        // Litle Endian, logging in seconds and nanoseconds
+                        self._endian = 'litle';
+                        Buffer.prototype.readUInt = Buffer.prototype.readUIntLE;
+                        Buffer.prototype.readInt = Buffer.prototype.readIntLE;
+                        self._logger.debug('litle endian file format, logging in seconds and nanoseconds, magic nr: a1b2c34d');
+                        break;
+                    case "a1b2c3d4":
+                        // Big Endian, logging in seconds and microseconds
+                        self._endian = 'big';
+                        Buffer.prototype.readUInt = Buffer.prototype.readUIntBE;
+                        Buffer.prototype.readInt = Buffer.prototype.readIntBE;
+                        self._logger.debug('big endian file format, logging in seconds and microseconds, magic nr: a1b2c3d4');
+                    case "a1b2c34d":
+                        // Big Endian, logging in seconds and nanoseconds
+                        self._endian = 'big';
+                        Buffer.prototype.readUInt = Buffer.prototype.readUIntBE;
+                        Buffer.prototype.readInt = Buffer.prototype.readIntBE;
+                        self._logger.debug('big endian file format, logging in seconds and nanoseconds, magic nr: a1b2c34d');
+                    default:
+                        self._logger.error("Incorrect file format, please use pcap format");
+                        reject(new Error('Incorrect file format, please use pcap format'));
                 }
 
                 self._majorVersion = self._buffer.readUInt(4,2);
@@ -352,7 +371,9 @@ PcapFile.prototype.initFile = function(){
             data_to_read = self._currentPacket.pcapPacketHeader.incl_len - 14;
 
             let buf = self.readBuf(data_to_read);
-            self._currentPacket.genericEthernetPacket.checksum = checksum(buf);
+            let chksum = checksum(buf);
+            self._currentPacket.genericEthernetPacket.checksum = chksum;
+            self._currentPacket.dataChksum = chksum;
             resolve(self);
 
         });
@@ -366,7 +387,9 @@ PcapFile.prototype.initFile = function(){
             data_to_read = self._currentPacket.pcapPacketHeader.incl_len - 14 -20;
 
             let buf = self.readBuf(data_to_read);
-            self._currentPacket.genericIPPacket.checksum = checksum(buf);
+            let chksum = checksum(buf);
+            self._currentPacket.genericIPPacket.checksum = chksum;
+            self._currentPacket.dataChksum = chksum;
             resolve(self);
 
         });
@@ -381,7 +404,9 @@ PcapFile.prototype.initFile = function(){
 
             // read data left
             let buf = self.readBuf(data_to_read);
-            self._currentPacket.genericIPPacket.checksum = checksum(buf);
+            let chksum = checksum(buf);
+            self._currentPacket.genericIPPacket.checksum = chksum;
+            self._currentPacket.dataChksum = chksum;
             resolve(self);
 
         });

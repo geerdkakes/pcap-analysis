@@ -65,10 +65,15 @@ const multibar = new cliProgress.MultiBar({
  
 }, cliProgress.Presets.shades_grey);
 
+// variable to determine if array needs to be kept for further analysis.
+// if we only convert from pcap to csv we don't need to keep all records in memory.
+var keep_in_memory = false;
+
 
 // if input file given on commandline we only process this file:
 if (configuration._singleInput) {
     var input = {};
+
 
 
     return new Promise(function(resolve, reject) {
@@ -101,6 +106,9 @@ if (configuration._singleInput) {
                 })
     })
 } else {
+
+    // we can have multiple inputs. keep pcap in memory
+    keep_in_memory = true;
     // start by checking filenames in main config
     configuration.init()
     .then(function(result){
@@ -163,7 +171,7 @@ function parse_data_file(input_file, config) {
     switch(input_file.inputType) {
         case "pcap":
             // add code to populate fileobject (to replace csvName)
-            return read_pcap(input_file.pcapName, input_file.fileObject, logger, filter_packet(input_file.filterSet), true, multibar,config._decoders)
+            return read_pcap(input_file.pcapName, input_file.fileObject, logger, filter_packet(input_file.filterSet), keep_in_memory, multibar,config._decoders)
             .then(function(result) {
                 return result._packets
             })

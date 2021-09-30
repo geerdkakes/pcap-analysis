@@ -102,6 +102,9 @@ function readIPv6Packet(pcapdata){
                 return readNexIPv6Header(result);
             case 51: // Authentication Header
                 return readNexIPv6Header(result);
+            case 58: // icmp v6 message
+                result._currentPacket.protocol = "icmpv6";
+                return readGenericIPPacket(result);
             case 60: // Destination Options for IPv6
                 return readNexIPv6Header(result);
             case 135: // Mobility Header
@@ -117,8 +120,8 @@ function readIPv6Packet(pcapdata){
             default:
                 result._logger.info("Unknown IP protocol at IPv6 packet " + 
                             result._packetCnt + 
-                            " with type " + 
-                            result._currentPacket.ethernetHeader.ethernet_type.toString(10)
+                            " with IPv6 nextheader: " + 
+                            result._currentPacket.ipV6Header.nextHeader.toString(10)
                             );
                 return readGenericIPv6Packet(result);
           }
@@ -160,8 +163,8 @@ function readNexIPv6Header(pcapdata) {
             default:
                 result._logger.info("Unknown IP protocol at IPv6 packet " + 
                             result._packetCnt + 
-                            " with type " + 
-                            result._currentPacket.ethernetHeader.ethernet_type.toString(10)
+                            " with option - nextheader type: " + 
+                            result._currentPacket.ipV6OptionHeader[result._currentPacket.ipV6Header.optionHeaderCnt-1].nextHeader.toString(10)
                             );
                 return readGenericIPv6Packet(result);
         }
@@ -275,20 +278,31 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
                                         });
             }
             if ( pcapfileobj._packets.length % fileobject.staticPctBufLen == 0 || lastcall) {
-                
-                fileobject.csvWriter.writeRecords(pcapfileobj._packets.slice((keep_buffer)?fileobject.currentPctWriten:0))
-                .then(() => {
-                        
-                    // check if we need to keep the buffer and reset if not
-                    if (!keep_buffer) {
-                        fileobject.currentPctWriten += pcapfileobj._packets.length;
-                        pcapfileobj._packets.length = 0;
-                    } else {
-                        fileobject.currentPctWriten = pcapfileobj._packets.length;
-                    }
-                    return resolve_write_csv_output(pcapfileobj);
+                let temp_packet_array = [];
+                if (keep_buffer) {
+                    // slice out buffer, keeping original
+                    temp_packet_array = pcapfileobj._packets.slice(fileobject.currentPctWriten);
+                } else {
+                    // splice out variables, deleting original
+                    temp_packet_array = pcapfileobj._packets.splice(0,pcapfileobj._packets.length);
+                }
+                if (temp_packet_array.length > 0) {
+                    fileobject.csvWriter.writeRecords(temp_packet_array)
 
-                 });
+                    .then(() => {
+                            
+                        // check if we need to keep the buffer and keep our administration up to date
+                        if (!keep_buffer) {
+                            fileobject.currentPctWriten += pcapfileobj._packets.length
+                        } else {
+                            fileobject.currentPctWriten = pcapfileobj._packets.length;
+                        }
+                        return resolve_write_csv_output(pcapfileobj);
+
+                    });
+                } else {
+                    return resolve_write_csv_output(pcapfileobj);
+                }
             } else {
                 return resolve_write_csv_output(pcapfileobj);
             }
@@ -341,15 +355,21 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
 
             }
             if (writeout){
-
-                fileobject.csvWriter.writeRecords(pcapfileobj._packets.slice((keep_buffer)?fileobject.currentPctWriten:0))
+                let temp_packet_array = [];
+                if (keep_buffer) {
+                    // slice out buffer, keeping original
+                    temp_packet_array = pcapfileobj._packets.slice(fileobject.currentPctWriten);
+                } else {
+                    // splice out variables, deleting original
+                    temp_packet_array = pcapfileobj._packets.splice(0,pcapfileobj._packets.length);
+                }
+                fileobject.csvWriter.writeRecords(temp_packet_array)
                 .then(() => {
 
                     fileobject.currentPctWriten += fileobject.staticPctBufLen;
-                    // check if we need to keep the buffer and reset if not
+                    // check if we need to keep the buffer and keep our administration up to date
                     if (!keep_buffer) {
                         fileobject.currentPctWriten += pcapfileobj._packets.length
-                        pcapfileobj._packets.length = 0;
                     } else {
                         fileobject.currentPctWriten = pcapfileobj._packets.length;
                     }
