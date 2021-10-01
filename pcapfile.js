@@ -11,8 +11,8 @@ var crypto = require('crypto');
 var packetDefinitions = require('./packet_definitions');
 
 
-// Buffer to read a new packet to memmory is currently set to 20k Bytes
-var maxPacketLength = 20000;
+// Buffer to read a new packet to memmory is currently set to 30k Bytes
+var maxPacketLength = 30000;
 
 // checksum function, used to create a checksum of the payload
 function checksum(buf, algorithm, encoding) {
