@@ -196,6 +196,8 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                             "pcapPacketHeader.orig_len": sourcePacket["pcapPacketHeader.orig_len"],
                             "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
                             "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
+                            "tcpHeader.dest_port": sourcePacket["tcpHeader.dest_port"],
+                            "tcpHeader.src_port": sourcePacket["tcpHeader.src_port"],
                             "rtpHeader.timestamp": sourcePacket["rtpHeader.timestamp"],
                             "rtpHeader.sequence_number": sourcePacket["rtpHeader.sequence_number"],
                             "rtpHeader.marker": sourcePacket["rtpHeader.marker"],
