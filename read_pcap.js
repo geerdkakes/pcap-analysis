@@ -204,7 +204,7 @@ function readGenericIPv6Packet(pcapdata){
 function readUDPPacket(pcapdata) {
     return pcapdata.readPacketUDPHeader(pcapdata)
             .then(function(result){
-                if (result._currentPacket.udpHeader.src_port == "2152" && result._currentPacket.udpHeader.dest_port == "2152") {
+                if (result._currentPacket.udpHeader.dest_port == "2152") {
                     // port 2152 indicates gprs tunnel. first interpret this tunnel header
                     return readGprsTunnelHeader(result);
                 } else {
@@ -318,9 +318,9 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
 
                 // check if lower stimestring is defined, if nog define it using current timestamp
                 if (typeof fileobject.lowerTimeString === 'undefined' || fileobject.lowerTimeString === null) {
-                    let dStart = new Date(timestamp*1000);
+                    let dStart = new Date(timestamp*1000);  // before this rule we should put the rule -> fileobject.windowCurrentLower = timestamp
                     fileobject.lowerTimeString = dStart.getHours() + '.' + dStart.getMinutes() + '.' + dStart.getSeconds();
-                    fileobject.windowCurrentLower = timestamp;
+                    fileobject.windowCurrentLower = timestamp;// this should be changed to get lower timestamp written, e.g. (Math.floor(timestamp/fileobject.windowlength) +1)*fileobject.windowlength;
                 } else{
                     fileobject.lowerTimeString = fileobject.upperTimeString
                     fileobject.windowCurrentLower = fileobject.windowCurrentUpper;
