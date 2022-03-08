@@ -229,6 +229,7 @@ ComparePcap.prototype.comparePcapArrays = function(sourceArray, destinationArray
                             "udpHeader.dest_port": sourcePacket["udpHeader.dest_port"],
                             "udpHeader.src_port": sourcePacket["udpHeader.src_port"],
                             "protocol": sourcePacket["protocol"],
+                            "direction": direction,
                             "lost": true
                         })
                 }
