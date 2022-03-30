@@ -314,13 +314,13 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
             // check if we went past our upperlimit
             if (typeof fileobject.windowCurrentUpper === 'undefined' || 
                             fileobject.windowCurrentUpper === null || 
-                            timestamp >= fileobject.windowCurrentUpper) {
+                            timestamp > fileobject.windowCurrentUpper) {
 
                 // check if lower stimestring is defined, if nog define it using current timestamp
                 if (typeof fileobject.lowerTimeString === 'undefined' || fileobject.lowerTimeString === null) {
-                    let dStart = new Date(timestamp*1000);  // before this rule we should put the rule -> fileobject.windowCurrentLower = timestamp
+                    fileobject.windowCurrentLower = Math.floor(timestamp/fileobject.windowlength)*fileobject.windowlength;
+                    let dStart = new Date(fileobject.windowCurrentLower*1000);
                     fileobject.lowerTimeString = dStart.getHours() + '.' + dStart.getMinutes() + '.' + dStart.getSeconds();
-                    fileobject.windowCurrentLower = timestamp;// this should be changed to get lower timestamp written, e.g. (Math.floor(timestamp/fileobject.windowlength) +1)*fileobject.windowlength;
                 } else{
                     fileobject.lowerTimeString = fileobject.upperTimeString
                     fileobject.windowCurrentLower = fileobject.windowCurrentUpper;
@@ -336,23 +336,29 @@ return new Promise( function(resolve_write_csv_output, reject_write_csv_output){
                 //open new file
                 fileobject.dynamicCurrentFileName = fileobject.basepath + fileobject.dateString + '_' + fileobject.lowerTimeString + '-' + 
                                                     fileobject.upperTimeString + '_' + fileobject.basename + '.csv';
-
+                if (writeout !== true) {
+                    // we havent just changed to a new window so define the filename to write to.
+                    fileobject.dynamicLastFileName = fileobject.dynamicCurrentFileName;
+                }
                 // check if file exists
-                if (fs.existsSync(fileobject.dynamicCurrentFileName)) {
+                if (fs.existsSync(fileobject.dynamicLastFileName)) {
                     // append to existing file
                     fileobject.csvWriter = createCsvWriter({
-                            path: fileobject.dynamicCurrentFileName,
+                            path: fileobject.dynamicLastFileName,
                             header: header_fields,
                             append: true
                     });
+                    // set new last filename
+                    fileobject.dynamicLastFileName = fileobject.dynamicCurrentFileName;
                 } else {
                     // create new file
                     fileobject.csvWriter = createCsvWriter({
-                                path: fileobject.dynamicCurrentFileName,
+                                path: fileobject.dynamicLastFileName,
                                 header: header_fields,
                         });
+                    // set new last filename
+                    fileobject.dynamicLastFileName = fileobject.dynamicCurrentFileName;
                 }
-
             }
             if (writeout){
                 let temp_packet_array = [];
